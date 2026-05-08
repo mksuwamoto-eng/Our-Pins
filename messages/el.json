@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "Our Pins",
+    "tagline": "Ο χάρτης της κοινότητάς μας στην Ιαπωνία"
+  },
+  "auth": {
+    "signInTitle": "Καλώς ήρθες πίσω",
+    "signInWithLine": "Σύνδεση με LINE",
+    "signInWithGoogle": "Σύνδεση με Google",
+    "needInvite": "Χρειάζεσαι πρόσκληση από τη Μάκω για να μπεις.",
+    "signOut": "Αποσύνδεση",
+    "noInviteHeading": "Πρόσκληση που χρειάζεται",
+    "noInviteBody": "Η Our Pins είναι ιδιωτική και κλειστή σε προσκλήσεις. Ζήτα από τη Μάκω ή τους συντονιστές της κοινότητας έναν σύνδεσμο πρόσκλησης."
+  },
+  "invite": {
+    "acceptingTitle": "Ενεργοποίηση της πρόσκλησής σου",
+    "expiredTitle": "Λήξη πρόσκλησης",
+    "expiredBody": "Αυτή η πρόσκληση δεν είναι πλέον ενεργή. Επικοινώνησε με τη Μάκω για νέα.",
+    "invalidTitle": "Άκυρη πρόσκληση",
+    "invalidBody": "Αυτός ο σύνδεσμος δεν αναγνωρίστηκε."
+  },
+  "onboarding": {
+    "title": "Ας σε γνωρίσουμε",
+    "displayName": "Πώς θα εμφανίζεσαι",
+    "displayNameHelp": "Αυτό βλέπουν οι άλλοι μέλη.",
+    "realName": "Πλήρες όνομα",
+    "realNameHelp": "Μόνο η Μάκω και οι συντονιστές το βλέπουν. Προαιρετικό αλλά βοηθάει.",
+    "avatar": "Φωτογραφία προφίλ",
+    "avatarHelp": "Υποχρεωτική. Σε αναγνωρίζουμε στη γωνιά του χάρτη.",
+    "displayPref": "Πώς να εμφανίζεσαι στους άλλους",
+    "displayPrefAvatarOnly": "Μόνο φωτογραφία",
+    "displayPrefAvatarName": "Φωτογραφία και όνομα",
+    "instagram": "Instagram",
+    "website": "Ιστοσελίδα",
+    "guidelinesAccept": "Συμφωνώ με τους κανόνες της κοινότητας",
+    "submit": "Συνέχεια"
+  },
+  "map": {
+    "title": "Χάρτης",
+    "addPin": "Προσθήκη pin",
+    "filters": "Φίλτρα",
+    "list": "Λίστα",
+    "newPinToast": "{name} πρόσθεσε ένα pin"
+  },
+  "pin": {
+    "vouchedBy": "Έχουν εγγυηθεί",
+    "iVouchedToo": "Έχω πάει κι εγώ",
+    "removeVouch": "Αφαίρεση εγγύησης",
+    "vouchNote": "Γιατί το συστήνεις",
+    "vouchComment": "Σχόλιο (προαιρετικό)",
+    "category": "Κατηγορία",
+    "addPhotos": "Πρόσθεσε φωτογραφίες (μέχρι 4)",
+    "save": "Αποθήκευση",
+    "delete": "Διαγραφή pin",
+    "archive": "Αρχειοθέτηση",
+    "restore": "Επαναφορά",
+    "former": "Πρώην μέλος"
+  },
+  "members": {
+    "title": "Μέλη",
+    "pinsCount": "{count, plural, one {# pin} other {# pins}}",
+    "vouchesCount": "{count, plural, one {# εγγύηση} other {# εγγυήσεις}}"
+  },
+  "settings": {
+    "title": "Ρυθμίσεις",
+    "language": "Γλώσσα",
+    "theme": "Θέμα",
+    "themeLight": "Φωτεινό",
+    "themeDark": "Σκοτεινό",
+    "themeSystem": "Συστήματος",
+    "danger": "Επικίνδυνη ζώνη",
+    "deleteAccount": "Διαγραφή λογαριασμού",
+    "deleteAccountConfirm": "Σίγουρα θέλεις να διαγράψεις τον λογαριασμό σου; Δεν αναιρείται."
+  },
+  "admin": {
+    "title": "Διαχείριση",
+    "members": "Μέλη",
+    "invites": "Προσκλήσεις",
+    "moderation": "Έλεγχος",
+    "createInvite": "Δημιουργία πρόσκλησης",
+    "copyLink": "Αντιγραφή",
+    "revoke": "Ανάκληση",
+    "toggleMembership": "Αλλαγή μέλους",
+    "promoteAdmin": "Προαγωγή σε admin",
+    "demoteAdmin": "Υποβιβασμός σε μέλος"
+  },
+  "common": {
+    "save": "Αποθήκευση",
+    "cancel": "Ακύρωση",
+    "loading": "Φόρτωση…",
+    "error": "Κάτι πήγε στραβά",
+    "back": "Πίσω"
+  }
+}

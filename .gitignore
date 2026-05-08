@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artefacts
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Env
+.env
+.env*.local
+.env.production
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test
+coverage/
+playwright-report/
+playwright/.cache/
+test-results/
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Vercel
+.vercel/
+
+# Misc
+*.log
