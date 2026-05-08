@@ -1,0 +1,98 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Aegean × ai-iro indigo, terracotta, matcha — see plan §Visual aesthetic */
+  --color-indigo-50: #eef0f7;
+  --color-indigo-100: #d8dcec;
+  --color-indigo-200: #b0b9d8;
+  --color-indigo-300: #8593c2;
+  --color-indigo-400: #5c6ea7;
+  --color-indigo-500: #3a4d8a;
+  --color-indigo-600: #2c3d72;
+  --color-indigo-700: #213057;
+  --color-indigo-800: #18223f;
+  --color-indigo-900: #0e152a;
+
+  --color-terracotta-50: #fbf0eb;
+  --color-terracotta-100: #f4d8cc;
+  --color-terracotta-200: #e9b29e;
+  --color-terracotta-300: #db8b6f;
+  --color-terracotta-400: #c9694b;
+  --color-terracotta-500: #b1502f;
+  --color-terracotta-600: #8e3e22;
+  --color-terracotta-700: #6c2f1a;
+
+  --color-matcha-50: #f0f4ec;
+  --color-matcha-100: #d9e3cd;
+  --color-matcha-200: #b2c79c;
+  --color-matcha-300: #8caa6b;
+  --color-matcha-400: #6e8c4f;
+  --color-matcha-500: #556e3d;
+  --color-matcha-600: #41552d;
+
+  --color-washi-50: #fbf8f1;
+  --color-washi-100: #f5efe2;
+  --color-washi-200: #ebe1ca;
+  --color-washi-300: #d8c8a4;
+
+  --color-graphite-100: #e3e2df;
+  --color-graphite-300: #a9a8a3;
+  --color-graphite-500: #54534f;
+  --color-graphite-700: #2c2b28;
+  --color-graphite-900: #0d0c0a;
+
+  --font-serif: 'Noto Serif JP', ui-serif, 'Georgia', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Noto Sans Mono', ui-monospace, monospace;
+
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgba(13, 21, 42, 0.04), 0 4px 12px rgba(13, 21, 42, 0.06);
+}
+
+@layer base {
+  :root {
+    --bg: var(--color-washi-50);
+    --fg: var(--color-graphite-900);
+    --muted: var(--color-graphite-500);
+    --primary: var(--color-indigo-600);
+    --accent: var(--color-terracotta-400);
+    --surface: #ffffff;
+    --border: var(--color-washi-200);
+  }
+
+  .dark {
+    --bg: var(--color-indigo-900);
+    --fg: var(--color-washi-100);
+    --muted: var(--color-graphite-300);
+    --primary: var(--color-indigo-300);
+    --accent: var(--color-terracotta-300);
+    --surface: var(--color-indigo-800);
+    --border: var(--color-indigo-700);
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+}

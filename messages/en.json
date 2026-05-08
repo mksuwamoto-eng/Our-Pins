@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "Our Pins",
+    "tagline": "Our community map of Japan"
+  },
+  "auth": {
+    "signInTitle": "Welcome back",
+    "signInWithLine": "Sign in with LINE",
+    "signInWithGoogle": "Sign in with Google",
+    "needInvite": "You'll need an invite from Mako to join.",
+    "signOut": "Sign out",
+    "noInviteHeading": "You need an invite",
+    "noInviteBody": "Our Pins is private and invite-only. Ask Mako or a community admin for an invite link."
+  },
+  "invite": {
+    "acceptingTitle": "Activating your invite",
+    "expiredTitle": "Invite expired",
+    "expiredBody": "This invite link is no longer active. Ask Mako for a new one.",
+    "invalidTitle": "Invalid invite",
+    "invalidBody": "We didn't recognise this link."
+  },
+  "onboarding": {
+    "title": "Let's set you up",
+    "displayName": "Display name",
+    "displayNameHelp": "What other members see.",
+    "realName": "Full name",
+    "realNameHelp": "Only Mako and admins see this. Optional but appreciated.",
+    "avatar": "Profile photo",
+    "avatarHelp": "Required. Helps people recognise you on the map.",
+    "displayPref": "How to appear to others",
+    "displayPrefAvatarOnly": "Avatar only",
+    "displayPrefAvatarName": "Avatar and name",
+    "instagram": "Instagram",
+    "website": "Website",
+    "guidelinesAccept": "I agree to the community guidelines",
+    "submit": "Continue"
+  },
+  "map": {
+    "title": "Map",
+    "addPin": "Add pin",
+    "filters": "Filters",
+    "list": "List",
+    "newPinToast": "{name} added a pin"
+  },
+  "pin": {
+    "vouchedBy": "Vouched by",
+    "iVouchedToo": "I've been here too",
+    "removeVouch": "Remove vouch",
+    "vouchNote": "Why I vouch",
+    "vouchComment": "Comment (optional)",
+    "category": "Category",
+    "addPhotos": "Add photos (up to 4)",
+    "save": "Save",
+    "delete": "Delete pin",
+    "archive": "Archive",
+    "restore": "Restore",
+    "former": "Former member"
+  },
+  "members": {
+    "title": "Members",
+    "pinsCount": "{count, plural, one {# pin} other {# pins}}",
+    "vouchesCount": "{count, plural, one {# vouch} other {# vouches}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "danger": "Danger zone",
+    "deleteAccount": "Delete account",
+    "deleteAccountConfirm": "Are you sure you want to delete your account? This can't be undone."
+  },
+  "admin": {
+    "title": "Admin",
+    "members": "Members",
+    "invites": "Invites",
+    "moderation": "Moderation",
+    "createInvite": "Create invite",
+    "copyLink": "Copy",
+    "revoke": "Revoke",
+    "toggleMembership": "Toggle membership",
+    "promoteAdmin": "Promote to admin",
+    "demoteAdmin": "Demote to member"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "back": "Back"
+  }
+}
