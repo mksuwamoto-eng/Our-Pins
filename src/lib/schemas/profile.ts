@@ -9,7 +9,7 @@ export const onboardingSchema = z.object({
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
   email: z.string().trim().email().optional(),
-  avatarPath: z.string().min(1, 'Upload a profile photo'),
+  avatarPath: z.string().optional().or(z.literal('').transform(() => undefined)),
   displayPref: z.enum(['avatar_only', 'avatar_name']),
   instagram: z
     .string()
