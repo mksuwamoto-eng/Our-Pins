@@ -141,6 +141,15 @@ export function MapView({ initialPins, categories }: Props) {
     setSelection({ kind: 'pin', pin: p });
   }
 
+  function handlePinUpdated(p: Pin) {
+    setPins((prev) => prev.map((x) => (x.id === p.id ? p : x)));
+    setSelection({ kind: 'pin', pin: p });
+  }
+
+  function handlePinDeleted(id: string) {
+    setPins((prev) => prev.filter((x) => x.id !== id));
+  }
+
   return (
     <div className="relative h-[calc(100vh-3.25rem)] w-full">
       <div ref={containerRef} className="absolute inset-0" />
@@ -158,6 +167,8 @@ export function MapView({ initialPins, categories }: Props) {
         categories={categories}
         onClose={() => setSelection(null)}
         onPinSaved={handlePinSaved}
+        onPinUpdated={handlePinUpdated}
+        onPinDeleted={handlePinDeleted}
       />
     </div>
   );

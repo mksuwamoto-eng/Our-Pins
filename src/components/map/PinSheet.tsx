@@ -3,6 +3,7 @@
 import { Drawer } from 'vaul';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Pencil } from 'lucide-react';
 import { getMapsLoader } from '@/lib/maps/loader';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { useRealtimeVouches } from '@/lib/supabase/realtime';
@@ -10,6 +11,7 @@ import type { Category, Pin, Vouch, Profile } from '@/lib/supabase/types';
 import { relativeTime } from '@/lib/time';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { InlineAddPinForm } from '@/components/pins/InlineAddPinForm';
+import { PinEditForm } from '@/components/pins/PinEditForm';
 import { PlaceInfoCard, type PlaceDetails } from './PlaceInfoCard';
 
 export type SheetSelection =
@@ -22,9 +24,18 @@ interface Props {
   categories: Category[];
   onClose: () => void;
   onPinSaved: (pin: Pin) => void;
+  onPinDeleted?: (pinId: string) => void;
+  onPinUpdated?: (pin: Pin) => void;
 }
 
-export function PinSheet({ selection, categories, onClose, onPinSaved }: Props) {
+export function PinSheet({
+  selection,
+  categories,
+  onClose,
+  onPinSaved,
+  onPinDeleted,
+  onPinUpdated,
+}: Props) {
   const open = selection !== null;
   return (
     <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -32,7 +43,15 @@ export function PinSheet({ selection, categories, onClose, onPinSaved }: Props) 
         <Drawer.Overlay className="fixed inset-0 z-30 bg-black/30" />
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
           {selection?.kind === 'pin' ? (
-            <ExistingPinView pin={selection.pin} categories={categories} />
+            <ExistingPinView
+              pin={selection.pin}
+              categories={categories}
+              onDeleted={(pinId) => {
+                onPinDeleted?.(pinId);
+                onClose();
+              }}
+              onUpdated={(p) => onPinUpdated?.(p)}
+            />
           ) : null}
           {selection?.kind === 'place' ? (
             <NewPlaceView
@@ -105,14 +124,51 @@ async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails | null> 
   }
 }
 
-function ExistingPinView({ pin, categories }: { pin: Pin; categories: Category[] }) {
+function ExistingPinView({
+  pin,
+  categories,
+  onDeleted,
+  onUpdated,
+}: {
+  pin: Pin;
+  categories: Category[];
+  onDeleted?: (pinId: string) => void;
+  onUpdated?: (pin: Pin) => void;
+}) {
   const t = useTranslations('pin');
   const category = categories.find((c) => c.id === pin.category_id) ?? null;
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [vouches, setVouches] = useState<Vouch[]>([]);
   const [vouchers, setVouchers] = useState<Map<string, Profile>>(new Map());
+  const [editing, setEditing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('member');
 
   useRealtimeVouches(pin.id);
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    supabase.auth.getSession().then(({ data }) => {
+      setCurrentUserId(data.session?.user.id ?? null);
+      const token = data.session?.access_token;
+      if (token) {
+        const [, body] = token.split('.');
+        if (body) {
+          try {
+            const padded = body.replace(/-/g, '+').replace(/_/g, '/');
+            const claims = JSON.parse(
+              atob(padded.padEnd(padded.length + ((4 - (padded.length % 4)) % 4), '=')),
+            ) as Record<string, unknown>;
+            if (typeof claims.user_role === 'string') setCurrentUserRole(claims.user_role);
+          } catch {
+            // ignore
+          }
+        }
+      }
+    });
+  }, []);
+
+  const canEdit = currentUserId === pin.created_by || currentUserRole === 'admin';
 
   useEffect(() => {
     if (!pin.google_place_id) return;
@@ -151,9 +207,45 @@ function ExistingPinView({ pin, categories }: { pin: Pin; categories: Category[]
 
   const otherVouches = vouches.filter((v) => v.voucher_id !== pin.created_by);
 
+  if (editing) {
+    return (
+      <>
+        <Drawer.Title className="font-serif text-2xl">Edit pin</Drawer.Title>
+        <p className="mt-1 text-sm text-[var(--muted)]">{pin.name}</p>
+        <div className="mt-4">
+          <PinEditForm
+            pin={pin}
+            categories={categories}
+            onSaved={(updated) => {
+              setEditing(false);
+              onUpdated?.(updated);
+            }}
+            onCancel={() => setEditing(false)}
+            onDeleted={() => {
+              setEditing(false);
+              onDeleted?.(pin.id);
+            }}
+          />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <Drawer.Title className="font-serif text-2xl">{pin.name}</Drawer.Title>
+      <div className="flex items-start justify-between gap-2">
+        <Drawer.Title className="font-serif text-2xl">{pin.name}</Drawer.Title>
+        {canEdit ? (
+          <button
+            onClick={() => setEditing(true)}
+            aria-label="Edit pin"
+            className="flex shrink-0 items-center gap-1 rounded-full border border-[var(--border)] px-2 py-1 text-xs"
+          >
+            <Pencil className="h-3 w-3" />
+            Edit
+          </button>
+        ) : null}
+      </div>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {category ? (
           <span
