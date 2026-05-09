@@ -27,7 +27,7 @@ export function AvatarUploader({
         maxWidthOrHeight: 512,
         useWebWorker: true,
       });
-      const path = `avatars/${userId}.jpg`;
+      const path = `avatars/${userId}/profile.jpg`;
       const supabase = getSupabaseBrowserClient();
       const { error: upErr } = await supabase.storage.from('pin-photos').upload(path, compressed, {
         upsert: true,
