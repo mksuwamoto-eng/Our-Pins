@@ -7,7 +7,10 @@
 insert into public.categories (slug, label, icon, color, sort_order) values
   ('restaurants',     'Restaurants',         'UtensilsCrossed', '#c9694b', 10),
   ('cafes',           'Cafés',               'Coffee',          '#d8c8a4', 20),
+  ('bakeries-sweets', 'Bakeries & sweets',   'Croissant',       '#db8b6f', 25),
+  ('bars-drinks',     'Bars & drinks',       'Wine',            '#213057', 28),
   ('greek-shops',     'Greek-product shops', 'ShoppingBag',     '#3a4d8a', 30),
+  ('shopping',        'Shopping',            'ShoppingCart',    '#5c6ea7', 35),
   ('weekend-trips',   'Weekend trips',       'TrainFront',      '#2c3d72', 40),
   ('things-to-do',    'Things to do',        'Sparkles',        '#6e8c4f', 50),
   ('onsen',           'Onsen',               'Droplet',         '#8593c2', 60),
