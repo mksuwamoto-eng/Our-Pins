@@ -36,7 +36,7 @@ export default async function PinDetailPage({ params }: { params: Promise<{ id: 
             const p = (v as unknown as { voucher: { display_name: string; display_pref: string } | null }).voucher;
             return (
               <li key={v.id} className="rounded-full bg-[var(--color-washi-100)] px-3 py-1 text-sm">
-                {p?.display_pref === 'avatar_only' ? '•' : p?.display_name ?? 'Former member'}
+                {p?.display_name ?? 'Former member'}
               </li>
             );
           })}
