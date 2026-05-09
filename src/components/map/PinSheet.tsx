@@ -317,7 +317,7 @@ function ExistingPinView({
 
 function labelFor(p: Profile | undefined): string {
   if (!p) return 'Former member';
-  return p.display_pref === 'avatar_only' ? '—' : p.display_name;
+  return p.display_name;
 }
 
 function NewPlaceView({

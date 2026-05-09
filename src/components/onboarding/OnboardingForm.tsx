@@ -76,19 +76,6 @@ export function OnboardingForm({ userId, initial }: Props) {
         />
       </Field>
 
-      <Field label={t('displayPref')}>
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-2">
-            <input type="radio" value="avatar_name" {...form.register('displayPref')} />
-            {t('displayPrefAvatarName')}
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" value="avatar_only" {...form.register('displayPref')} />
-            {t('displayPrefAvatarOnly')}
-          </label>
-        </div>
-      </Field>
-
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t('instagram')} error={errors.instagram?.message}>
           <input
