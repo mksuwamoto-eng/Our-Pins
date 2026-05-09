@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
-import { VouchButton } from '@/components/pins/VouchButton';
+import { VouchPanel } from '@/components/pins/VouchPanel';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function PinDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +28,7 @@ export default async function PinDetailPage({ params }: { params: Promise<{ id: 
         <p className="mt-2 text-sm text-[var(--muted)]">{pin.address}</p>
         <p className="mt-4 whitespace-pre-wrap">{pin.vouch_note}</p>
 
-        <VouchButton pinId={pin.id} />
+        <VouchPanel pinId={pin.id} />
 
         <h2 className="mt-8 font-serif text-xl">Vouched by</h2>
         <ul className="mt-2 flex flex-wrap gap-2">
