@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
 import { onboardingSchema } from '@/lib/schemas/profile';
 
 export async function POST(req: Request) {
@@ -32,7 +32,10 @@ export async function POST(req: Request) {
   if (upProfileErr) return NextResponse.json({ error: upProfileErr.message }, { status: 500 });
 
   if (v.realName) {
-    const { error: upPrivErr } = await supabase
+    // private_profiles has no INSERT policy by design (same as profiles);
+    // first-time onboarding has to use the admin client.
+    const admin = createSupabaseAdminClient();
+    const { error: upPrivErr } = await admin
       .from('private_profiles')
       .upsert({ id: user.id, real_name: v.realName, email: v.email ?? null }, { onConflict: 'id' });
     if (upPrivErr) return NextResponse.json({ error: upPrivErr.message }, { status: 500 });
