@@ -148,7 +148,7 @@ function ExistingPinView({
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: { user: { id: string }; access_token: string } | null } }) => {
       setCurrentUserId(data.session?.user.id ?? null);
       const token = data.session?.access_token;
       if (token) {
