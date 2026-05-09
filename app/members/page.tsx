@@ -23,7 +23,7 @@ export default async function MembersPage() {
               <Link href={`/members/${m.id}`} className="card flex flex-col items-center gap-2 p-3">
                 <div className="h-14 w-14 rounded-full bg-[var(--color-washi-200)]" />
                 <p className="text-sm">
-                  {m.display_pref === 'avatar_only' ? '—' : m.display_name}
+                  {m.display_name}
                 </p>
               </Link>
             </li>

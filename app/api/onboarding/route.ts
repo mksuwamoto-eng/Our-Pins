@@ -16,6 +16,20 @@ export async function POST(req: Request) {
   }
   const v = parsed.data;
 
+  // Check display_name is not already taken by another member (case-insensitive).
+  const { data: clash } = await supabase
+    .from('profiles')
+    .select('id')
+    .ilike('display_name', v.displayName)
+    .neq('id', user.id)
+    .maybeSingle();
+  if (clash) {
+    return NextResponse.json(
+      { error: 'That name is already taken — try a nickname or add an initial.' },
+      { status: 409 },
+    );
+  }
+
   const update: Record<string, unknown> = {
     display_name: v.displayName,
     display_pref: v.displayPref,
