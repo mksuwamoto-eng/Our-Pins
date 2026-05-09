@@ -18,7 +18,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
     <AppShell>
       <div className="mx-auto max-w-2xl px-4 py-6">
         <h1 className="font-serif text-3xl">
-          {member.display_pref === 'avatar_only' ? '—' : member.display_name}
+          {member.display_name}
         </h1>
 
         <h2 className="mt-6 font-serif text-xl">Pins</h2>
