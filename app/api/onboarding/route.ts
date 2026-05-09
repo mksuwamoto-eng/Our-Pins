@@ -16,16 +16,18 @@ export async function POST(req: Request) {
   }
   const v = parsed.data;
 
+  const update: Record<string, unknown> = {
+    display_name: v.displayName,
+    display_pref: v.displayPref,
+    instagram: v.instagram ?? null,
+    website: v.website ?? null,
+    onboarded_at: new Date().toISOString(),
+  };
+  if (v.avatarPath) update.avatar_path = v.avatarPath;
+
   const { error: upProfileErr } = await supabase
     .from('profiles')
-    .update({
-      display_name: v.displayName,
-      avatar_path: v.avatarPath,
-      display_pref: v.displayPref,
-      instagram: v.instagram ?? null,
-      website: v.website ?? null,
-      onboarded_at: new Date().toISOString(),
-    })
+    .update(update)
     .eq('id', user.id);
   if (upProfileErr) return NextResponse.json({ error: upProfileErr.message }, { status: 500 });
 
