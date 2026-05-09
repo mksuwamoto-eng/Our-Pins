@@ -1,11 +1,10 @@
 'use client';
 
-import { Loader } from '@googlemaps/js-api-loader';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { publicEnv } from '@/lib/env';
+import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category } from '@/lib/supabase/types';
 import { placeToPinFields } from '@/lib/maps/places';
 
@@ -29,12 +28,7 @@ export function PinForm({ categories }: { categories: Category[] }) {
   useEffect(() => {
     if (!inputRef.current) return;
     let active = true;
-    const loader = new Loader({
-      apiKey: publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      version: 'weekly',
-      libraries: ['places'],
-    });
-    loader.load().then((google) => {
+    getMapsLoader().load().then((google) => {
       if (!active || !inputRef.current) return;
       const ac = new google.maps.places.Autocomplete(inputRef.current, {
         componentRestrictions: { country: 'jp' },

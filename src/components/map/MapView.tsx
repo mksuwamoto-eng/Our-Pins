@@ -1,6 +1,5 @@
 'use client';
 
-import { Loader } from '@googlemaps/js-api-loader';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { useFiltersStore } from '@/stores/filters';
 import { useRealtimePins } from '@/lib/supabase/realtime';
-import { publicEnv } from '@/lib/env';
+import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category, Pin } from '@/lib/supabase/types';
 import { PinSheet } from './PinSheet';
 import { FilterBar } from './FilterBar';
@@ -44,12 +43,7 @@ export function MapView({ initialPins, categories }: Props) {
   useEffect(() => {
     if (!containerRef.current) return;
     let active = true;
-    const loader = new Loader({
-      apiKey: publicEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      version: 'weekly',
-      libraries: ['places', 'marker'],
-    });
-    loader.load().then((google) => {
+    getMapsLoader().load().then((google) => {
       if (!active || !containerRef.current) return;
       const map = new google.maps.Map(containerRef.current, {
         center: viewport.center ?? JAPAN_CENTER,
