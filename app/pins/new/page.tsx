@@ -1,10 +1,11 @@
 import { AppShell } from '@/components/layout/AppShell';
 import { PinForm } from '@/components/pins/PinForm';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
 
 export default async function NewPinPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: categories } = await supabase
+  // Categories are global config; fetch with the admin client to bypass RLS.
+  const admin = createSupabaseAdminClient();
+  const { data: categories } = await admin
     .from('categories')
     .select('*')
     .is('archived_at', null)
