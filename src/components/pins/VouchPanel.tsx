@@ -17,7 +17,7 @@ export function VouchPanel({ pinId }: { pinId: string }) {
   useEffect(() => {
     let cancelled = false;
     const supabase = getSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       if (!data.user || cancelled) return;
       supabase
         .from('vouches')
@@ -25,7 +25,7 @@ export function VouchPanel({ pinId }: { pinId: string }) {
         .eq('pin_id', pinId)
         .eq('voucher_id', data.user.id)
         .maybeSingle()
-        .then(({ data: row }) => {
+        .then(({ data: row }: { data: { id: string; comment: string | null } | null }) => {
           if (cancelled) return;
           setVouched(!!row);
           if (row?.comment) setComment(row.comment);
