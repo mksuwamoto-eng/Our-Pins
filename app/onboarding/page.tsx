@@ -9,7 +9,7 @@ export default async function OnboardingPage() {
   if (!user) redirect('/sign-in');
 
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  if (profile?.is_member) redirect('/');
+  if (profile?.onboarded_at) redirect('/');
 
   const t = await getTranslations('onboarding');
 
