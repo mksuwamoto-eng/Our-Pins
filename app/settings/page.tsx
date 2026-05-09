@@ -11,6 +11,12 @@ export default async function SettingsPage() {
     <AppShell>
       <div className="mx-auto max-w-xl px-4 py-6 space-y-6">
         <h1 className="font-serif text-2xl">{t('title')}</h1>
+        <Link href="/settings/profile" className="card block p-4 hover:bg-[var(--color-washi-100)]">
+          <h2 className="font-medium">Edit profile</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Update your display name, photo, Instagram, or website.
+          </p>
+        </Link>
         <SignOutButton label={tAuth('signOut')} />
         <div className="card p-4">
           <h2 className="font-medium text-[var(--color-terracotta-500)]">{t('danger')}</h2>
