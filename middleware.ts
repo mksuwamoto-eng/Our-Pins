@@ -35,19 +35,19 @@ export async function middleware(request: NextRequest) {
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
   let isMember = false;
-  let role = 'member';
+  let userRole = 'member';
   let onboarded = false;
   if (accessToken) {
     const claims = decodeJwtBody(accessToken);
     if (claims) {
       isMember = claims.is_member === true;
-      if (typeof claims.role === 'string') role = claims.role;
+      if (typeof claims.user_role === 'string') userRole = claims.user_role;
       onboarded = claims.onboarded === true;
     }
   }
 
   if (pathname.startsWith('/admin')) {
-    if (role !== 'admin') return NextResponse.redirect(new URL('/', request.url));
+    if (userRole !== 'admin') return NextResponse.redirect(new URL('/', request.url));
     return response;
   }
 
