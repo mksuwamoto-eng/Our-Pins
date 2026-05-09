@@ -189,9 +189,9 @@ function ExistingPinView({
       .select('*')
       .eq('pin_id', pin.id)
       .order('created_at', { ascending: false })
-      .then(async ({ data }) => {
+      .then(async ({ data }: { data: Vouch[] | null }) => {
         if (cancelled || !data) return;
-        setVouches(data as Vouch[]);
+        setVouches(data);
         const ids = Array.from(new Set(data.map((v) => v.voucher_id)));
         if (!ids.length) return;
         const { data: profs } = await supabase.from('profiles').select('*').in('id', ids);
