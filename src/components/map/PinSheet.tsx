@@ -10,6 +10,7 @@ import type { Category, Pin, Vouch, Profile } from '@/lib/supabase/types';
 import { relativeTime } from '@/lib/time';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { InlineAddPinForm } from '@/components/pins/InlineAddPinForm';
+import { PlaceInfoCard, type PlaceDetails } from './PlaceInfoCard';
 
 export type SheetSelection =
   | { kind: 'pin'; pin: Pin }
@@ -23,21 +24,13 @@ interface Props {
   onPinSaved: (pin: Pin) => void;
 }
 
-interface FetchedPlace {
-  placeId: string;
-  name: string;
-  address: string;
-  location: { lat: number; lng: number };
-  addressComponents: Array<{ longText: string; shortText: string; types: string[] }>;
-}
-
 export function PinSheet({ selection, categories, onClose, onPinSaved }: Props) {
   const open = selection !== null;
   return (
     <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-30 bg-black/30" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[85vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
           {selection?.kind === 'pin' ? (
             <ExistingPinView pin={selection.pin} categories={categories} />
           ) : null}
@@ -54,13 +47,83 @@ export function PinSheet({ selection, categories, onClose, onPinSaved }: Props) 
   );
 }
 
+async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails | null> {
+  try {
+    const google = await getMapsLoader().load();
+    const place = new google.maps.places.Place({ id: placeId });
+    await place.fetchFields({
+      fields: [
+        'displayName',
+        'formattedAddress',
+        'location',
+        'addressComponents',
+        'photos',
+        'regularOpeningHours',
+        'nationalPhoneNumber',
+        'internationalPhoneNumber',
+        'websiteURI',
+        'googleMapsURI',
+        'editorialSummary',
+        'primaryType',
+      ],
+    });
+
+    const photoUrls = (place.photos ?? [])
+      .slice(0, 5)
+      .map((p) => {
+        try {
+          return p.getURI({ maxHeight: 240, maxWidth: 360 });
+        } catch {
+          return null;
+        }
+      })
+      .filter((u): u is string => !!u);
+
+    return {
+      placeId,
+      name: place.displayName ?? 'Unknown place',
+      address: place.formattedAddress ?? '',
+      location: place.location
+        ? { lat: place.location.lat(), lng: place.location.lng() }
+        : { lat: 0, lng: 0 },
+      addressComponents: (place.addressComponents ?? []).map((c) => ({
+        longText: c.longText ?? '',
+        shortText: c.shortText ?? '',
+        types: c.types ?? [],
+      })),
+      photoUrls,
+      weekdayDescriptions: place.regularOpeningHours?.weekdayDescriptions ?? [],
+      phone: place.nationalPhoneNumber ?? place.internationalPhoneNumber ?? null,
+      websiteUri: place.websiteURI ?? null,
+      googleMapsUri: place.googleMapsURI ?? null,
+      editorialSummary:
+        typeof place.editorialSummary === 'string' ? place.editorialSummary : null,
+      primaryType: place.primaryType ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function ExistingPinView({ pin, categories }: { pin: Pin; categories: Category[] }) {
   const t = useTranslations('pin');
   const category = categories.find((c) => c.id === pin.category_id) ?? null;
+  const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [vouches, setVouches] = useState<Vouch[]>([]);
   const [vouchers, setVouchers] = useState<Map<string, Profile>>(new Map());
 
   useRealtimeVouches(pin.id);
+
+  useEffect(() => {
+    if (!pin.google_place_id) return;
+    let cancelled = false;
+    fetchPlaceDetails(pin.google_place_id).then((d) => {
+      if (!cancelled) setPlaceDetails(d);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pin.google_place_id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,50 +149,83 @@ function ExistingPinView({ pin, categories }: { pin: Pin; categories: Category[]
     };
   }, [pin.id]);
 
+  const otherVouches = vouches.filter((v) => v.voucher_id !== pin.created_by);
+
   return (
     <>
       <Drawer.Title className="font-serif text-2xl">{pin.name}</Drawer.Title>
-      {category ? (
-        <span
-          className="mt-1 inline-block w-fit rounded-full px-2 py-0.5 text-xs"
-          style={{ background: category.color, color: 'white' }}
-        >
-          {category.label}
-        </span>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        {category ? (
+          <span
+            className="inline-block rounded-full px-2 py-0.5 text-xs"
+            style={{ background: category.color, color: 'white' }}
+          >
+            {category.label}
+          </span>
+        ) : null}
+        <span className="text-sm text-[var(--muted)]">{pin.address}</span>
+      </div>
+
+      {placeDetails ? (
+        <div className="mt-4">
+          <PlaceInfoCard place={placeDetails} />
+        </div>
       ) : null}
-      <p className="mt-2 text-sm text-[var(--muted)]">{pin.address}</p>
-      <p className="mt-4 whitespace-pre-wrap">{pin.vouch_note}</p>
 
-      <VouchPanel pinId={pin.id} />
+      <div className="mt-6 border-t border-[var(--border)] pt-4">
+        <h3 className="text-sm font-medium">
+          {t('vouchedBy')} ({vouches.length})
+        </h3>
 
-      <h3 className="mt-6 text-sm font-medium">
-        {t('vouchedBy')} ({vouches.length})
-      </h3>
-      <ul className="mt-3 space-y-3">
-        {vouches.map((v) => {
-          const p = vouchers.get(v.voucher_id);
-          const name = p?.display_pref === 'avatar_only' ? '—' : p?.display_name ?? t('former');
-          return (
-            <li key={v.id} className="flex gap-3">
-              <div
-                className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
-                aria-hidden
-              />
-              <div className="flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-medium">{name}</span>
-                  <time className="text-xs text-[var(--muted)]">{relativeTime(v.created_at)}</time>
+        <div className="mt-3 rounded-lg bg-[var(--color-washi-100)] p-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-sm font-medium">
+              {labelFor(vouchers.get(pin.created_by))}{' '}
+              <span className="text-xs font-normal text-[var(--muted)]">— pinned</span>
+            </span>
+            <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
+          </div>
+          <p className="mt-1 whitespace-pre-wrap text-sm">{pin.vouch_note}</p>
+        </div>
+
+        <ul className="mt-3 space-y-3">
+          {otherVouches.map((v) => {
+            const p = vouchers.get(v.voucher_id);
+            return (
+              <li key={v.id} className="flex gap-3">
+                <div
+                  className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
+                  aria-hidden
+                />
+                <div className="flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-medium">{labelFor(p)}</span>
+                    <time className="text-xs text-[var(--muted)]">
+                      {relativeTime(v.created_at)}
+                    </time>
+                  </div>
+                  {v.comment ? (
+                    <p className="mt-1 text-sm">{v.comment}</p>
+                  ) : (
+                    <p className="mt-1 text-xs italic text-[var(--muted)]">
+                      vouched, no comment
+                    </p>
+                  )}
                 </div>
-                {v.comment ? (
-                  <p className="mt-1 text-sm text-[var(--fg)]">{v.comment}</p>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+              </li>
+            );
+          })}
+        </ul>
+
+        <VouchPanel pinId={pin.id} />
+      </div>
     </>
   );
+}
+
+function labelFor(p: Profile | undefined): string {
+  if (!p) return 'Former member';
+  return p.display_pref === 'avatar_only' ? '—' : p.display_name;
 }
 
 function NewPlaceView({
@@ -141,7 +237,7 @@ function NewPlaceView({
   categories: Category[];
   onSaved: (pin: Pin) => void;
 }) {
-  const [place, setPlace] = useState<FetchedPlace | null>(null);
+  const [place, setPlace] = useState<PlaceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [existingPin, setExistingPin] = useState<Pin | null>(null);
 
@@ -151,7 +247,6 @@ function NewPlaceView({
     setExistingPin(null);
     setPlace(null);
 
-    // First check if this place is already a pin in our DB.
     fetch(`/api/pins/by-place/${encodeURIComponent(placeId)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((found: Pin | null) => {
@@ -160,32 +255,11 @@ function NewPlaceView({
       })
       .catch(() => {});
 
-    // In parallel, fetch Google Places details for the summary card.
-    getMapsLoader()
-      .load()
-      .then(async (google) => {
-        if (cancelled) return;
-        const p = new google.maps.places.Place({ id: placeId });
-        await p.fetchFields({
-          fields: ['displayName', 'formattedAddress', 'location', 'addressComponents'],
-        });
-        if (cancelled) return;
-        setPlace({
-          placeId,
-          name: p.displayName ?? 'Unknown place',
-          address: p.formattedAddress ?? '',
-          location: p.location
-            ? { lat: p.location.lat(), lng: p.location.lng() }
-            : { lat: 0, lng: 0 },
-          addressComponents: (p.addressComponents ?? []).map((c) => ({
-            longText: c.longText ?? '',
-            shortText: c.shortText ?? '',
-            types: c.types ?? [],
-          })),
-        });
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    fetchPlaceDetails(placeId).then((d) => {
+      if (cancelled) return;
+      setPlace(d);
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
@@ -201,8 +275,6 @@ function NewPlaceView({
     );
   }
 
-  // If somebody else already pinned this place between the time the map loaded
-  // and now, switch to the existing-pin view.
   if (existingPin) {
     return <ExistingPinView pin={existingPin} categories={categories} />;
   }
@@ -211,10 +283,16 @@ function NewPlaceView({
     <>
       <Drawer.Title className="font-serif text-2xl">{place.name}</Drawer.Title>
       <p className="mt-1 text-sm text-[var(--muted)]">{place.address}</p>
-      <p className="mt-4 text-sm">
-        Nobody from the community has vouched for this place yet. <strong>Be the first.</strong>
-      </p>
-      <InlineAddPinForm place={place} categories={categories} onSaved={onSaved} />
+      <div className="mt-4">
+        <PlaceInfoCard place={place} />
+      </div>
+      <div className="mt-6 border-t border-[var(--border)] pt-4">
+        <p className="text-sm">
+          Nobody from the community has vouched for this place yet.{' '}
+          <strong>Be the first.</strong>
+        </p>
+        <InlineAddPinForm place={place} categories={categories} onSaved={onSaved} />
+      </div>
     </>
   );
 }
