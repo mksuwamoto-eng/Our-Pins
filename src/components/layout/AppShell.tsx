@@ -13,13 +13,13 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient();
   const { data: sess } = await supabase.auth.getSession();
   const accessToken = sess.session?.access_token;
-  let role = 'member';
+  let userRole = 'member';
   if (accessToken) {
     const [, body] = accessToken.split('.');
     if (body) {
       try {
         const claims = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as Record<string, unknown>;
-        if (typeof claims.role === 'string') role = claims.role;
+        if (typeof claims.user_role === 'string') userRole = claims.user_role;
       } catch {
         // ignore
       }
@@ -34,7 +34,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/members">Members</Link>
-          {role === 'admin' ? <Link href="/admin/members">{tAdmin('title')}</Link> : null}
+          {userRole === 'admin' ? <Link href="/admin/members">{tAdmin('title')}</Link> : null}
           <Link href="/settings">{tSettings('title')}</Link>
           <LanguageToggle />
           <ThemeToggle />
