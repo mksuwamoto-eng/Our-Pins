@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
 import { consumeInviteCookie } from '@/lib/auth/accept-invite';
 import { publicEnv } from '@/lib/env';
 
@@ -20,8 +20,10 @@ export async function GET(req: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    // Make sure a profiles row exists for first-time Google sign-ins.
-    await supabase.from('profiles').upsert(
+    // Use the admin client because RLS has no INSERT policy on profiles
+    // (profile creation is intentionally server-side only).
+    const admin = createSupabaseAdminClient();
+    await admin.from('profiles').upsert(
       {
         id: user.id,
         display_name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'New member',
@@ -32,6 +34,9 @@ export async function GET(req: NextRequest) {
       { onConflict: 'id', ignoreDuplicates: true },
     );
     await consumeInviteCookie(user.id);
+    // The invite consumption flipped is_member; refresh the session so the
+    // new JWT claims (is_member=true) take effect immediately.
+    await supabase.auth.refreshSession();
   }
 
   return NextResponse.redirect(`${publicEnv.NEXT_PUBLIC_SITE_URL}${next}`);
