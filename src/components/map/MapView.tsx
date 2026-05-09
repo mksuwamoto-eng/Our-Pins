@@ -9,7 +9,7 @@ import { useFiltersStore } from '@/stores/filters';
 import { useRealtimePins } from '@/lib/supabase/realtime';
 import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category, Pin } from '@/lib/supabase/types';
-import { PinSheet } from './PinSheet';
+import { PinSheet, type SheetSelection } from './PinSheet';
 import { FilterBar } from './FilterBar';
 
 const JAPAN_CENTER = { lat: 36.2048, lng: 138.2529 };
@@ -28,12 +28,21 @@ export function MapView({ initialPins, categories }: Props) {
 
   const { categoryIds, prefectures, search, viewport, setViewport } = useFiltersStore();
   const [pins, setPins] = useState<Pin[]>(initialPins);
-  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<SheetSelection>(null);
+
   const categoryById = useMemo(() => {
     const m = new Map<string, Category>();
     for (const c of categories) m.set(c.id, c);
     return m;
   }, [categories]);
+
+  // Lookup table: google_place_id -> Pin (so map clicks on POIs we already
+  // have a pin for resolve to the existing pin instead of "add new").
+  const pinByPlaceId = useMemo(() => {
+    const m = new Map<string, Pin>();
+    for (const p of pins) if (p.google_place_id) m.set(p.google_place_id, p);
+    return m;
+  }, [pins]);
 
   useRealtimePins((newPin) => {
     setPins((prev) => [newPin, ...prev.filter((p) => p.id !== newPin.id)]);
@@ -51,12 +60,32 @@ export function MapView({ initialPins, categories }: Props) {
         mapId: 'OUR_PINS_MAP',
         disableDefaultUI: true,
         zoomControl: true,
+        clickableIcons: true,
       });
       map.addListener('idle', () => {
         const c = map.getCenter();
         const z = map.getZoom();
         if (c && typeof z === 'number') {
           setViewport({ center: { lat: c.lat(), lng: c.lng() }, zoom: z });
+        }
+      });
+      // Click anywhere — if it's a POI, capture place_id and prevent the
+      // default Google info window so our sheet handles it.
+      map.addListener('click', (event: google.maps.MapMouseEvent & { placeId?: string; stop?: () => void }) => {
+        if (event.placeId) {
+          event.stop?.();
+          const existing = pinByPlaceIdRef.current.get(event.placeId);
+          if (existing) {
+            setSelection({ kind: 'pin', pin: existing });
+          } else {
+            setSelection({
+              kind: 'place',
+              placeId: event.placeId,
+              location: event.latLng
+                ? { lat: event.latLng.lat(), lng: event.latLng.lng() }
+                : null,
+            });
+          }
         }
       });
       mapRef.current = map;
@@ -67,7 +96,14 @@ export function MapView({ initialPins, categories }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Render markers.
+  // pinByPlaceId is in a ref so the click handler above always sees the
+  // latest map without re-binding the listener (which we can't easily do).
+  const pinByPlaceIdRef = useRef(pinByPlaceId);
+  useEffect(() => {
+    pinByPlaceIdRef.current = pinByPlaceId;
+  }, [pinByPlaceId]);
+
+  // Render markers for our pins.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -90,7 +126,7 @@ export function MapView({ initialPins, categories }: Props) {
         map,
         content: createMarkerEl(cat?.color ?? '#3a4d8a'),
       });
-      marker.addListener('click', () => setSelectedPinId(pin.id));
+      marker.addListener('click', () => setSelection({ kind: 'pin', pin }));
       return marker;
     });
 
@@ -100,7 +136,10 @@ export function MapView({ initialPins, categories }: Props) {
     };
   }, [pins, categoryIds, prefectures, search, categoryById]);
 
-  const selected = pins.find((p) => p.id === selectedPinId) ?? null;
+  function handlePinSaved(p: Pin) {
+    setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
+    setSelection({ kind: 'pin', pin: p });
+  }
 
   return (
     <div className="relative h-[calc(100vh-3.25rem)] w-full">
@@ -110,10 +149,16 @@ export function MapView({ initialPins, categories }: Props) {
         onClick={() => router.push('/pins/new')}
         aria-label={t('addPin')}
         className="absolute bottom-6 right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--primary)] text-white shadow-lg"
+        title="Add a place not already on the map"
       >
         <Plus className="h-6 w-6" />
       </button>
-      <PinSheet pin={selected} category={selected ? categoryById.get(selected.category_id) ?? null : null} onClose={() => setSelectedPinId(null)} />
+      <PinSheet
+        selection={selection}
+        categories={categories}
+        onClose={() => setSelection(null)}
+        onPinSaved={handlePinSaved}
+      />
     </div>
   );
 }

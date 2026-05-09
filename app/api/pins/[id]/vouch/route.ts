@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const {
@@ -9,9 +9,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   } = await supabase.auth.getUser();
   if (!user) return new NextResponse('unauth', { status: 401 });
 
+  const body = (await req.json().catch(() => ({}))) as { comment?: string };
+  const comment = typeof body.comment === 'string' && body.comment.trim().length
+    ? body.comment.trim().slice(0, 500)
+    : null;
+
   const { error } = await supabase
     .from('vouches')
-    .upsert({ pin_id: id, voucher_id: user.id }, { onConflict: 'pin_id,voucher_id', ignoreDuplicates: true });
+    .upsert(
+      { pin_id: id, voucher_id: user.id, comment },
+      { onConflict: 'pin_id,voucher_id' },
+    );
 
   if (error) return new NextResponse(error.message, { status: 500 });
   return NextResponse.json({ ok: true });
