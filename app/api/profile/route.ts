@@ -53,8 +53,8 @@ export async function PATCH(req: Request) {
 
   const update: Record<string, unknown> = {
     display_name: v.displayName,
-    instagram: v.instagram ?? null,
-    website: v.website ?? null,
+    instagram: v.instagram?.trim() || null,
+    website: v.website?.trim() || null,
   };
   if (v.avatarPath) update.avatar_path = v.avatarPath;
 
