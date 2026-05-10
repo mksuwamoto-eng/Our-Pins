@@ -16,6 +16,14 @@ export default async function EditProfilePage() {
     .eq('id', user.id)
     .maybeSingle();
 
+  let avatarUrl: string | null = null;
+  if (profile?.avatar_path && !profile.avatar_path.includes('_pending')) {
+    const { data } = await supabase.storage
+      .from('pin-photos')
+      .createSignedUrl(profile.avatar_path, 3600);
+    avatarUrl = data?.signedUrl ?? null;
+  }
+
   return (
     <AppShell>
       <div className="mx-auto max-w-xl px-4 py-6 space-y-6">
@@ -27,6 +35,7 @@ export default async function EditProfilePage() {
             instagram: profile?.instagram ?? '',
             website: profile?.website ?? '',
             avatarPath: profile?.avatar_path ?? '',
+            avatarUrl,
           }}
         />
       </div>

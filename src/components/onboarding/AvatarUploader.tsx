@@ -6,12 +6,14 @@ import { Camera } from 'lucide-react';
 
 export function AvatarUploader({
   userId: _userId,
+  initialUrl,
   onChange,
 }: {
   userId: string;
+  initialUrl?: string | null;
   onChange: (path: string) => void;
 }) {
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(initialUrl ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
