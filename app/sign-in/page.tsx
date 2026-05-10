@@ -1,4 +1,6 @@
 import { getTranslations } from 'next-intl/server';
+import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
+import { publicEnv } from '@/lib/env';
 
 export default async function SignInPage({
   searchParams,
@@ -7,7 +9,8 @@ export default async function SignInPage({
 }) {
   const t = await getTranslations('auth');
   const params = await searchParams;
-  const next = encodeURIComponent(params.next ?? '/');
+  const nextParam = params.next ?? '/';
+  const nextEncoded = encodeURIComponent(nextParam);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
@@ -21,22 +24,35 @@ export default async function SignInPage({
       <p className="mb-8 text-center text-sm text-[var(--muted)]">{t('needInvite')}</p>
 
       <div className="card flex flex-col gap-3 p-6">
+        <MagicLinkForm siteUrl={publicEnv.NEXT_PUBLIC_SITE_URL} next={nextParam} />
+
+        <div className="my-2 flex items-center gap-2 text-xs text-[var(--muted)]">
+          <span className="h-px flex-1 bg-[var(--border)]" />
+          or
+          <span className="h-px flex-1 bg-[var(--border)]" />
+        </div>
+
         <a
-          href={`/api/auth/line/start?next=${next}`}
+          href={`/api/auth/line/start?next=${nextEncoded}`}
           className="flex items-center justify-center gap-2 rounded-lg bg-[#06C755] px-4 py-3 font-medium text-white transition hover:bg-[#05B14B]"
         >
           {t('signInWithLine')}
         </a>
         <a
-          href={`/api/auth/google/start?next=${next}`}
+          href={`/api/auth/google/start?next=${nextEncoded}`}
           className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 font-medium text-[var(--fg)] transition hover:bg-[var(--surface-subtle)]"
         >
           {t('signInWithGoogle')}
         </a>
       </div>
 
+      <p className="mt-6 text-center text-xs text-[var(--muted)]">
+        We use sign-in only to verify it&apos;s you. We never read your inbox or contacts. Your
+        email is visible only to community admins.
+      </p>
+
       {params.error ? (
-        <p className="mt-6 text-sm text-[var(--color-terracotta-500)]">{params.error}</p>
+        <p className="mt-4 text-center text-sm text-[var(--color-terracotta-500)]">{params.error}</p>
       ) : null}
     </main>
   );
