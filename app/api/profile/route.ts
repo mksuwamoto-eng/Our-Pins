@@ -8,14 +8,15 @@ const editSchema = z.object({
   instagram: z
     .string()
     .trim()
-    .regex(/^[a-zA-Z0-9._]{1,30}$/, 'Use letters, numbers, dot or underscore')
+    .max(30, 'Instagram handle is at most 30 characters')
+    .transform((v) => v.replace(/^@/, ''))
     .optional()
     .or(z.literal('').transform(() => undefined)),
   website: z
     .string()
     .trim()
-    .regex(/^https:\/\//, 'URL must start with https://')
-    .url()
+    .max(200)
+    .transform((v) => (v && !/^https?:\/\//i.test(v) ? `https://${v}` : v))
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
