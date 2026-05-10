@@ -181,6 +181,8 @@ function ExistingPinView({
     };
   }, [pin.google_place_id]);
 
+  const [avatarUrls, setAvatarUrls] = useState<Map<string, string>>(new Map());
+
   useEffect(() => {
     let cancelled = false;
     const supabase = getSupabaseBrowserClient();
@@ -199,6 +201,20 @@ function ExistingPinView({
         const map = new Map<string, Profile>();
         for (const p of profs) map.set(p.id, p as Profile);
         setVouchers(map);
+
+        const paths = profs
+          .map((p) => (p as Profile).avatar_path)
+          .filter((p): p is string => typeof p === 'string' && !p.includes('_pending'));
+        if (!paths.length) return;
+        const { data: signed } = await supabase.storage
+          .from('pin-photos')
+          .createSignedUrls(paths, 3600);
+        if (cancelled || !signed) return;
+        const urlMap = new Map<string, string>();
+        for (const s of signed) {
+          if (s.signedUrl && s.path) urlMap.set(s.path, s.signedUrl);
+        }
+        setAvatarUrls(urlMap);
       });
     return () => {
       cancelled = true;
@@ -270,25 +286,56 @@ function ExistingPinView({
         </h3>
 
         <div className="mt-3 rounded-lg bg-[var(--color-washi-100)] p-3">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-sm font-medium">
-              {labelFor(vouchers.get(pin.created_by))}{' '}
-              <span className="text-xs font-normal text-[var(--muted)]">— pinned</span>
-            </span>
-            <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
+          <div className="flex items-start gap-3">
+            {(() => {
+              const creator = vouchers.get(pin.created_by);
+              const url = creator?.avatar_path ? avatarUrls.get(creator.avatar_path) : undefined;
+              return url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={url}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
+                  aria-hidden
+                />
+              );
+            })()}
+            <div className="flex-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm font-medium">
+                  {labelFor(vouchers.get(pin.created_by))}{' '}
+                  <span className="text-xs font-normal text-[var(--muted)]">— pinned</span>
+                </span>
+                <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-sm">{pin.vouch_note}</p>
+            </div>
           </div>
-          <p className="mt-1 whitespace-pre-wrap text-sm">{pin.vouch_note}</p>
         </div>
 
         <ul className="mt-3 space-y-3">
           {otherVouches.map((v) => {
             const p = vouchers.get(v.voucher_id);
+            const url = p?.avatar_path ? avatarUrls.get(p.avatar_path) : undefined;
             return (
               <li key={v.id} className="flex gap-3">
-                <div
-                  className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
-                  aria-hidden
-                />
+                {url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
+                    aria-hidden
+                  />
+                )}
                 <div className="flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium">{labelFor(p)}</span>
