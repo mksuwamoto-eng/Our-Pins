@@ -57,6 +57,7 @@
     --primary: var(--color-indigo-600);
     --accent: var(--color-terracotta-400);
     --surface: #ffffff;
+    --surface-subtle: var(--color-washi-100);
     --border: var(--color-washi-200);
   }
 
@@ -67,6 +68,7 @@
     --primary: var(--color-indigo-300);
     --accent: var(--color-terracotta-300);
     --surface: var(--color-indigo-800);
+    --surface-subtle: var(--color-indigo-700);
     --border: var(--color-indigo-700);
   }
 
