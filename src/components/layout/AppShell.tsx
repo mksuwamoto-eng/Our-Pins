@@ -29,7 +29,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-        <Link href="/" className="font-serif text-xl">
+        <Link href="/" className="flex items-center gap-2 font-serif text-xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/goj-logo.png" alt="" className="h-8 w-8 rounded-md" />
           {t('name')}
         </Link>
         <nav className="flex items-center gap-3 text-sm">
