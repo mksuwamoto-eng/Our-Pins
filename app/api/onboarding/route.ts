@@ -39,7 +39,12 @@ export async function POST(req: Request) {
   };
   if (v.avatarPath) update.avatar_path = v.avatarPath;
 
-  const { error: upProfileErr } = await supabase
+  // Onboarding has to bypass column-level grants on profiles. Migration 0012
+  // revokes UPDATE on onboarded_at (and other privileged cols) from the
+  // `authenticated` role; using the user's session client would 401 with
+  // "permission denied for table profiles". The admin client bypasses grants.
+  const admin = createSupabaseAdminClient();
+  const { error: upProfileErr } = await admin
     .from('profiles')
     .update(update)
     .eq('id', user.id);
@@ -48,7 +53,6 @@ export async function POST(req: Request) {
   if (v.realName) {
     // private_profiles has no INSERT policy by design (same as profiles);
     // first-time onboarding has to use the admin client.
-    const admin = createSupabaseAdminClient();
     const { error: upPrivErr } = await admin
       .from('private_profiles')
       .upsert({ id: user.id, real_name: v.realName, email: v.email ?? null }, { onConflict: 'id' });
