@@ -55,7 +55,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/no-invite', request.url));
   }
 
-  if (!onboarded && pathname !== '/onboarding' && !pathname.startsWith('/api/onboarding')) {
+  if (
+    !onboarded &&
+    pathname !== '/onboarding' &&
+    !pathname.startsWith('/api/onboarding') &&
+    !pathname.startsWith('/api/profile/avatar')
+  ) {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
