@@ -79,26 +79,38 @@ export function AdminInvitesPanel({ invites }: { invites: Invite[] }) {
           </tr>
         </thead>
         <tbody>
-          {invites.map((i) => (
-            <tr key={i.token} className="border-t border-[var(--border)]">
-              <td className="py-2 font-mono text-xs">{i.token.slice(0, 8)}…</td>
-              <td>{i.note ?? '—'}</td>
-              <td>{i.used_at ? '✓' : '–'}</td>
-              <td className="text-xs text-[var(--muted)]">{new Date(i.expires_at).toLocaleDateString()}</td>
-              <td className="flex gap-2 py-2">
-                {!i.used_at ? (
-                  <>
-                    <button onClick={() => copyLink(i.token)} className="rounded border border-[var(--border)] px-2 py-1">
-                      {t('copyLink')}
-                    </button>
-                    <button onClick={() => revoke(i.token)} className="rounded border border-[var(--border)] px-2 py-1">
-                      {t('revoke')}
-                    </button>
-                  </>
-                ) : null}
-              </td>
-            </tr>
-          ))}
+          {invites.map((i) => {
+            const expiresAt = new Date(i.expires_at);
+            const isRevoked = !i.used_at && expiresAt.getTime() < Date.now();
+            return (
+              <tr key={i.token} className="border-t border-[var(--border)]">
+                <td className="py-2 font-mono text-xs">{i.token.slice(0, 8)}…</td>
+                <td>{i.note ?? '—'}</td>
+                <td>
+                  {i.used_at
+                    ? 'Used'
+                    : isRevoked
+                      ? <span className="text-[var(--muted)]">Revoked</span>
+                      : '–'}
+                </td>
+                <td className="text-xs text-[var(--muted)]">
+                  {isRevoked ? '—' : expiresAt.toLocaleDateString()}
+                </td>
+                <td className="flex gap-2 py-2">
+                  {!i.used_at && !isRevoked ? (
+                    <>
+                      <button onClick={() => copyLink(i.token)} className="rounded border border-[var(--border)] px-2 py-1">
+                        {t('copyLink')}
+                      </button>
+                      <button onClick={() => revoke(i.token)} className="rounded border border-[var(--border)] px-2 py-1">
+                        {t('revoke')}
+                      </button>
+                    </>
+                  ) : null}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
