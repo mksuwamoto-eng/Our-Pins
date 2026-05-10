@@ -30,11 +30,13 @@ export async function POST(req: Request) {
     );
   }
 
+  const cleanInsta = v.instagram?.trim() || null;
+  const cleanWebsite = v.website?.trim() || null;
   const update: Record<string, unknown> = {
     display_name: v.displayName,
     display_pref: v.displayPref,
-    instagram: v.instagram ?? null,
-    website: v.website ?? null,
+    instagram: cleanInsta,
+    website: cleanWebsite,
     onboarded_at: new Date().toISOString(),
   };
   if (v.avatarPath) update.avatar_path = v.avatarPath;
