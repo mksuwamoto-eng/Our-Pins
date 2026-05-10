@@ -1,6 +1,7 @@
 'use client';
 
 import { Drawer } from 'vaul';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Pencil } from 'lucide-react';
@@ -287,27 +288,31 @@ function ExistingPinView({
 
         <div className="mt-3 rounded-lg bg-[var(--color-washi-100)] p-3">
           <div className="flex items-start gap-3">
-            {(() => {
-              const creator = vouchers.get(pin.created_by);
-              const url = creator?.avatar_path ? avatarUrls.get(creator.avatar_path) : undefined;
-              return url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={url}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full object-cover"
-                />
-              ) : (
-                <div
-                  className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
-                  aria-hidden
-                />
-              );
-            })()}
+            <Link href={`/members/${pin.created_by}`} className="shrink-0">
+              {(() => {
+                const creator = vouchers.get(pin.created_by);
+                const url = creator?.avatar_path ? avatarUrls.get(creator.avatar_path) : undefined;
+                return url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="h-9 w-9 rounded-full bg-[var(--color-washi-200)]"
+                    aria-hidden
+                  />
+                );
+              })()}
+            </Link>
             <div className="flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium">
-                  {labelFor(vouchers.get(pin.created_by))}{' '}
+                  <Link href={`/members/${pin.created_by}`} className="hover:underline">
+                    {labelFor(vouchers.get(pin.created_by))}
+                  </Link>{' '}
                   <span className="text-xs font-normal text-[var(--muted)]">— pinned</span>
                 </span>
                 <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
@@ -323,22 +328,28 @@ function ExistingPinView({
             const url = p?.avatar_path ? avatarUrls.get(p.avatar_path) : undefined;
             return (
               <li key={v.id} className="flex gap-3">
-                {url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={url}
-                    alt=""
-                    className="h-9 w-9 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="h-9 w-9 shrink-0 rounded-full bg-[var(--color-washi-200)]"
-                    aria-hidden
-                  />
-                )}
+                <Link href={`/members/${v.voucher_id}`} className="shrink-0">
+                  {url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={url}
+                      alt=""
+                      className="h-9 w-9 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="h-9 w-9 rounded-full bg-[var(--color-washi-200)]"
+                      aria-hidden
+                    />
+                  )}
+                </Link>
                 <div className="flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-medium">{labelFor(p)}</span>
+                    <span className="text-sm font-medium">
+                      <Link href={`/members/${v.voucher_id}`} className="hover:underline">
+                        {labelFor(p)}
+                      </Link>
+                    </span>
                     <time className="text-xs text-[var(--muted)]">
                       {relativeTime(v.created_at)}
                     </time>

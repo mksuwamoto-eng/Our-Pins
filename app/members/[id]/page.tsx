@@ -32,7 +32,31 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
           ) : (
             <div className="h-20 w-20 rounded-full bg-[var(--color-washi-200)]" />
           )}
-          <h1 className="font-serif text-3xl">{member.display_name}</h1>
+          <div>
+            <h1 className="font-serif text-3xl">{member.display_name}</h1>
+            <div className="mt-1 flex flex-wrap gap-3 text-sm">
+              {member.instagram ? (
+                <a
+                  href={`https://instagram.com/${member.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--primary)] hover:underline"
+                >
+                  @{member.instagram}
+                </a>
+              ) : null}
+              {member.website ? (
+                <a
+                  href={member.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--primary)] hover:underline"
+                >
+                  {member.website.replace(/^https?:\/\//, '')}
+                </a>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         <h2 className="mt-6 font-serif text-xl">Pins</h2>
