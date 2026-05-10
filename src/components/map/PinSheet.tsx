@@ -286,7 +286,7 @@ function ExistingPinView({
           {t('vouchedBy')} ({vouches.length})
         </h3>
 
-        <div className="mt-3 rounded-lg bg-[var(--color-washi-100)] p-3">
+        <div className="mt-3 rounded-lg bg-[var(--surface-subtle)] p-3">
           <div className="flex items-start gap-3">
             <Link href={`/members/${pin.created_by}`} className="shrink-0">
               {(() => {
