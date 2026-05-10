@@ -29,7 +29,7 @@ export default async function SignInPage({
         </a>
         <a
           href={`/api/auth/google/start?next=${next}`}
-          className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 font-medium text-[var(--fg)] transition hover:bg-[var(--color-washi-100)]"
+          className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 font-medium text-[var(--fg)] transition hover:bg-[var(--surface-subtle)]"
         >
           {t('signInWithGoogle')}
         </a>
