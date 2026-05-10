@@ -3,10 +3,9 @@
 import imageCompression from 'browser-image-compression';
 import { useState } from 'react';
 import { Camera } from 'lucide-react';
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 export function AvatarUploader({
-  userId,
+  userId: _userId,
   onChange,
 }: {
   userId: string;
@@ -27,13 +26,14 @@ export function AvatarUploader({
         maxWidthOrHeight: 512,
         useWebWorker: true,
       });
-      const path = `avatars/${userId}/profile.jpg`;
-      const supabase = getSupabaseBrowserClient();
-      const { error: upErr } = await supabase.storage.from('pin-photos').upload(path, compressed, {
-        upsert: true,
-        contentType: 'image/jpeg',
-      });
-      if (upErr) throw upErr;
+      const fd = new FormData();
+      fd.append('file', compressed, 'profile.jpg');
+      const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error ?? 'Upload failed');
+      }
+      const { path } = (await res.json()) as { path: string };
       onChange(path);
       setPreview(URL.createObjectURL(compressed));
     } catch (err) {
