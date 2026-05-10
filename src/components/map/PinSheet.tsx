@@ -310,7 +310,7 @@ function ExistingPinView({
             <div className="flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium">
-                  <Link href={`/members/${pin.created_by}`} className="hover:underline">
+                  <Link href={`/members/${pin.created_by}`} className="text-inherit hover:underline">
                     {labelFor(vouchers.get(pin.created_by))}
                   </Link>{' '}
                   <span className="text-xs font-normal text-[var(--muted)]">— pinned</span>
@@ -346,7 +346,7 @@ function ExistingPinView({
                 <div className="flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium">
-                      <Link href={`/members/${v.voucher_id}`} className="hover:underline">
+                      <Link href={`/members/${v.voucher_id}`} className="text-inherit hover:underline">
                         {labelFor(p)}
                       </Link>
                     </span>
