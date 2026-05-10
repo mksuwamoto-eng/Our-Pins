@@ -11,6 +11,7 @@ interface Props {
     instagram: string;
     website: string;
     avatarPath: string;
+    avatarUrl: string | null;
   };
 }
 
@@ -55,6 +56,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
         <span className="block text-sm font-medium">Profile photo</span>
         <AvatarUploader
           userId={userId}
+          initialUrl={initial.avatarUrl}
           onChange={(path) => setAvatarPath(path)}
         />
       </div>
