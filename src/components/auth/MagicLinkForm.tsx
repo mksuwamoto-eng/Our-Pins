@@ -6,9 +6,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 interface Props {
   siteUrl: string;
   next: string;
+  invite?: string | null;
 }
 
-export function MagicLinkForm({ siteUrl, next }: Props) {
+export function MagicLinkForm({ siteUrl, next, invite }: Props) {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -19,10 +20,13 @@ export function MagicLinkForm({ siteUrl, next }: Props) {
     setBusy(true);
     setError(null);
     const supabase = getSupabaseBrowserClient();
+    const callback = new URL(`${siteUrl}/api/auth/magic/callback`);
+    callback.searchParams.set('next', next);
+    if (invite) callback.searchParams.set('invite', invite);
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${siteUrl}/api/auth/magic/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: callback.toString(),
       },
     });
     setBusy(false);

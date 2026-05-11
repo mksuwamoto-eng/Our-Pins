@@ -1,12 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
-import { consumeInviteCookie } from '@/lib/auth/accept-invite';
+import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
 import { publicEnv } from '@/lib/env';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const next = url.searchParams.get('next') ?? '/';
+  const inviteToken = url.searchParams.get('invite');
 
   if (!code) {
     return NextResponse.redirect(`${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in?error=Missing+code`);
@@ -33,7 +34,8 @@ export async function GET(req: NextRequest) {
       },
       { onConflict: 'id', ignoreDuplicates: true },
     );
-    await consumeInviteCookie(user.id);
+    const consumed = inviteToken ? await consumeInviteByToken(user.id, inviteToken) : null;
+    if (!consumed) await consumeInviteCookie(user.id);
     // The invite consumption flipped is_member; refresh the session so the
     // new JWT claims (is_member=true) take effect immediately.
     await supabase.auth.refreshSession();
