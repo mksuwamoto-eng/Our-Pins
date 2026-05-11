@@ -68,7 +68,7 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
   callback at `/api/auth/magic/callback`). Email sender is Supabase's
   default (rate-limited ~3/hr, often lands in spam).
 - ✅ Sign-in via **Google OAuth** (alt-email is the only whitelisted
-  test user other than Mako herself).
+  test user other than Mako himself).
 - ✅ Invite flow: admin mints invite at `/admin/invites` → "Copy link"
   → friend opens link → cookie set → sign-in page → magic link or
   Google → callback consumes invite (flips `is_member=true`) → onboarding.
@@ -273,7 +273,7 @@ src/
 ## How to use this file in a new conversation
 
 1. Read this whole file first.
-2. Ask Mako what she's working on — there's been a lot of recent work,
+2. Ask Mako what he's working on — there's been a lot of recent work,
    and TODOs may have shifted.
 3. Use git log to confirm what's actually on main vs. the feature
    branch.
