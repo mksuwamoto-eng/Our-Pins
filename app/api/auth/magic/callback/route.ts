@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
-import { consumeInviteCookie } from '@/lib/auth/accept-invite';
+import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
 import { publicEnv } from '@/lib/env';
 
 // Mirrors app/api/auth/google/callback/route.ts. Magic link emails point here
@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const next = url.searchParams.get('next') ?? '/';
+  const inviteToken = url.searchParams.get('invite');
 
   if (!code) {
     return NextResponse.redirect(`${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in?error=Missing+code`);
@@ -36,7 +37,10 @@ export async function GET(req: NextRequest) {
       },
       { onConflict: 'id', ignoreDuplicates: true },
     );
-    await consumeInviteCookie(user.id);
+    // Prefer the URL-borne invite token (survives cookie loss / cross-device
+    // magic-link clicks). Fall back to the cookie for the happy path.
+    const consumed = inviteToken ? await consumeInviteByToken(user.id, inviteToken) : null;
+    if (!consumed) await consumeInviteCookie(user.id);
     await supabase.auth.refreshSession();
   }
 

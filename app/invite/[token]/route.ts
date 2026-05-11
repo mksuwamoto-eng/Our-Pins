@@ -15,5 +15,11 @@ export async function GET(
   }
 
   await setInviteCookie(token);
-  return NextResponse.redirect(new URL('/sign-in?next=/onboarding', url));
+  // Belt-and-suspenders: also forward the token via the URL so it survives
+  // cookie loss (Safari ITP, the 30-min TTL, cross-device sign-ins where
+  // the magic-link email is opened on a different browser).
+  const dest = new URL('/sign-in', url);
+  dest.searchParams.set('next', '/onboarding');
+  dest.searchParams.set('invite', token);
+  return NextResponse.redirect(dest);
 }

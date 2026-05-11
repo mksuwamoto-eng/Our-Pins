@@ -16,12 +16,14 @@ function classifyAuthError(raw: string): 'expired' | 'generic' {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; invite?: string }>;
 }) {
   const t = await getTranslations('auth');
   const params = await searchParams;
   const nextParam = params.next ?? '/';
   const nextEncoded = encodeURIComponent(nextParam);
+  const invite = params.invite ?? null;
+  const inviteQs = invite ? `&invite=${encodeURIComponent(invite)}` : '';
   const friendlyError = params.error
     ? t(classifyAuthError(params.error) === 'expired' ? 'linkExpired' : 'signInError')
     : null;
@@ -47,7 +49,7 @@ export default async function SignInPage({
       ) : null}
 
       <div className="card flex flex-col gap-3 p-6">
-        <MagicLinkForm siteUrl={publicEnv.NEXT_PUBLIC_SITE_URL} next={nextParam} />
+        <MagicLinkForm siteUrl={publicEnv.NEXT_PUBLIC_SITE_URL} next={nextParam} invite={invite} />
 
         <div className="my-2 flex items-center gap-2 text-xs text-[var(--muted)]">
           <span className="h-px flex-1 bg-[var(--border)]" />
@@ -56,13 +58,13 @@ export default async function SignInPage({
         </div>
 
         <a
-          href={`/api/auth/line/start?next=${nextEncoded}`}
+          href={`/api/auth/line/start?next=${nextEncoded}${inviteQs}`}
           className="flex items-center justify-center gap-2 rounded-lg bg-[#06C755] px-4 py-3 font-medium text-white transition hover:bg-[#05B14B]"
         >
           {t('signInWithLine')}
         </a>
         <a
-          href={`/api/auth/google/start?next=${nextEncoded}`}
+          href={`/api/auth/google/start?next=${nextEncoded}${inviteQs}`}
           className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 font-medium text-[var(--fg)] transition hover:bg-[var(--surface-subtle)]"
         >
           {t('signInWithGoogle')}
