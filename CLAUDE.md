@@ -1,284 +1,281 @@
 # Our Pins — Project Context for New Sessions
 
-This file is the cross-session memory for the Our Pins project. When you start
-a new chat, paste this whole file in (or just say "read CLAUDE.md and pick up
-from there" if the assistant has filesystem access).
-
-The full implementation plan is at
-`/root/.claude/plans/use-the-grill-me-lively-pearl.md` — but most of what's
-listed there is already built. **This file supersedes the plan for current
-state.**
+Cross-session memory for the Our Pins project. New chats should read
+this file first before doing anything.
 
 ---
 
 ## TL;DR
 
-A private, invite-only community map of Japan for ~150 Greeks living in
-Japan. Tap any place on the Google map → see vouches from the community
-or be the first to vouch. Mako (the user) is the lead admin and is
-building this for her group.
+Private, invite-only community map for ~150 Greeks living in Japan.
+Tap any place on a Google map → see vouches from the community or be
+the first to vouch. Mako (the user) is the lead admin.
 
-Repo: `mksuwamoto-eng/Our-Pins`
-Active branch: `claude/build-our-pins-project-LgwVx`
-Default branch: `main` (no commits there yet — branch lives only on the
-feature branch)
+- **Repo**: `mksuwamoto-eng/Our-Pins` (capital O, capital P)
+- **Production**: https://our-pins.vercel.app (Vercel; custom domain
+  `ourpins.app` planned but not attached)
+- **Default branch**: `main`
+- **Active feature branch**: `claude/deploy-vercel-Lh8VI` (kept ahead
+  of main; local Claude on Mako's Mac merges to main + pushes)
 
 ---
 
 ## Stack snapshot
 
-- Next.js 15.1.0 (App Router, RSC)
-- React 19, TypeScript strict
-- Tailwind 4 (beta), shadcn-style hand-rolled components, Lucide icons,
-  Vaul bottom sheets
-- Supabase: Auth, Postgres (cloud project), Storage, Realtime
+- Next.js 15.5.18 (App Router, RSC), React 19, TypeScript strict
+- `next.config.ts` has `typescript.ignoreBuildErrors: true` and
+  `eslint.ignoreDuringBuilds: true` as a deploy-day shortcut — type
+  errors still surface in the editor and in dev, but `next build`
+  won't block on them. Worth revisiting eventually.
+- Tailwind 4 (beta) with custom theme; new `--surface-subtle` variable
+  for dark-mode-aware card backgrounds (washi-100 light / indigo-700
+  dark)
+- Supabase: Auth, Postgres (cloud project `soxxftpdyvlvaqkzvmxj`),
+  Storage, Realtime
 - `@supabase/ssr` for the SSR cookie dance, no ORM by design
-- Google Maps JS API + Places API (New) v1 — clicking POIs is the core
-  flow
-- Zustand for filter state, TanStack Query for server cache, next-intl
-  for EL/EN, next-themes for dark mode
-- Vitest + Playwright for tests
+- Google Maps JS API + Places API (New) v1
+- Zustand (filters), TanStack Query (server cache), next-intl (EL/EN),
+  next-themes (dark mode), Vaul (bottom sheets)
+- pnpm 9 on Vercel, pnpm 11 locally; lockfile committed
 
 ---
 
-## Infra accounts already set up
+## Infra accounts
 
-- **Supabase project**: `soxxftpdyvlvaqkzvmxj` (URL:
-  `https://soxxftpdyvlvaqkzvmxj.supabase.co`), Northeast Asia (Tokyo),
-  Postgres 17, free tier. Custom Access Token JWT hook is enabled and
-  points at `public.access_token_hook`.
-- **Google Cloud project**: `our-pins`. APIs enabled (Maps JS, Places
-  API New, Geocoding). API key restricted to HTTP referrer
-  `https://ourpins.app/*` (and works from localhost too in practice).
-  Billing linked via existing account. OAuth consent screen in
-  **Testing** mode (100-user cap, 1 alt-email test user added).
+- **Supabase**: project `soxxftpdyvlvaqkzvmxj`, Northeast Asia (Tokyo),
+  Postgres 17. Custom Access Token JWT hook points at
+  `public.access_token_hook` and sets `is_member`, `user_role`,
+  `onboarded` claims.
+- **Google Cloud**: project `our-pins`. APIs enabled: Maps JS, Places
+  API New, Geocoding. Maps API key restricted to HTTP referrers
+  `https://our-pins.vercel.app/*` and `https://ourpins.app/*`. OAuth
+  consent screen in **Testing** mode (100-user cap, individual emails
+  in Test Users allowlist).
+- **Vercel**: deployed from `main`. Env vars set in dashboard (all 11
+  from `.env.example`, with `NEXT_PUBLIC_SITE_URL=https://our-pins.vercel.app`).
 - **LINE Developers**: not yet set up. Path B bridge code exists in
-  `src/lib/auth/line-jwt-bridge.ts` and is ready, just needs the
-  channel created and creds in `.env.local`.
+  `src/lib/auth/line-jwt-bridge.ts` and is ready, needs Channel ID +
+  Secret. Sign-in page has the button but the flow won't work yet.
 
 Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 **Never commit that file.**
 
 ---
 
-## What works right now (verified end-to-end)
+## What works in production (verified end-to-end with a real test user)
 
-- ✅ Google sign-in via Supabase OAuth (alt email is the only allowed
-  test user; Mako herself is the admin signed in via that alt account).
-- ✅ Mako's profile is bootstrapped as `is_member=true`,
-  `role='admin'`, `onboarded_at=now()` (manually inserted into
-  `public.profiles` early on; see "Open issues" below).
-- ✅ Custom JWT claims: `is_member`, `user_role`, `onboarded` injected
-  by the access-token Auth Hook (Postgres function
-  `public.access_token_hook`). RLS reads `auth.jwt() ->> 'user_role'`
-  — there's NO `role` claim on top of Supabase's reserved `role`.
-- ✅ Click any Google POI on the map → bottom sheet opens with rich
-  Google data (name, address, photos, today's hours, phone,
-  website, "View on Google Maps") + community section underneath.
-- ✅ "Be the first to vouch" inline form when no community pin exists.
-- ✅ Vouches with optional comments, relative timestamps ("2 days
-  ago"), and the creator's pinned-by-me callout box.
-- ✅ Pin marker click → same sheet → can vouch / un-vouch / leave a
-  comment.
-- ✅ Edit pin (category + vouch_note) and soft-delete (archive) for
-  the pin creator OR an admin. Inline edit form replaces the sheet
-  body when "Edit" is clicked.
-- ✅ Admin tabs: `members` (table with promote/demote/revoke
-  inline), `invites` (mint with note + count, copy link, revoke),
-  `moderation` (archive/restore feed of pins, with Include archived
-  toggle).
-- ✅ Search-via-floating-+ flow still works as a fallback for places
-  Google doesn't index.
+- ✅ Sign-in via **magic link** (Supabase `signInWithOtp`, custom
+  callback at `/api/auth/magic/callback`). Email sender is Supabase's
+  default (rate-limited ~3/hr, often lands in spam).
+- ✅ Sign-in via **Google OAuth** (alt-email is the only whitelisted
+  test user other than Mako herself).
+- ✅ Invite flow: admin mints invite at `/admin/invites` → "Copy link"
+  → friend opens link → cookie set → sign-in page → magic link or
+  Google → callback consumes invite (flips `is_member=true`) → onboarding.
+- ✅ Onboarding form: profile photo (optional), display name (required,
+  case-insensitively unique), full name (optional, admin-only),
+  Instagram + website (both optional, auto-prepends `https://`),
+  community-guidelines checkbox.
+- ✅ Click any Google POI on the map → bottom sheet with rich Google
+  data + community vouches. "Be the first to vouch" inline form when
+  no community pin exists.
+- ✅ Pin marker click → same sheet → vouch / un-vouch / comment.
+- ✅ Pin edit (category + vouch_note) and soft-delete (archive) for
+  creator OR admin.
+- ✅ Admin tabs: members (promote/demote/revoke), invites (mint with
+  note + count, copy link, revoke; revoked invites show "Revoked"
+  state), moderation (archive/restore feed).
+- ✅ `/settings/profile` — edit display name, photo, Instagram, website
+  after onboarding.
+- ✅ Avatars render on `/members` grid, `/members/[id]` profile, and
+  inside PinSheet next to each voucher. Clicking an avatar/name links
+  to the member's profile page.
 - ✅ EL/EN i18n via cookie locale, dark mode toggle.
-- ✅ Categories filter chips above the map work, server-side
-  category fetch uses admin client (RLS bypass for global config).
+- ✅ GOJ logo wired into header, sign-in page, and PWA manifest
+  (requires `public/icons/goj-logo.png` to exist — if Mako forgot to
+  copy it, you'll see broken image icons).
 
 ---
 
-## Open issues / pending TODOs (in rough priority order)
+## Open issues / pending TODOs
 
-1. **Deploy to Vercel.** Currently localhost-only. Required before
-   inviting the co-admin or anyone else. README has the deploy steps;
-   need to also set the same env vars in the Vercel dashboard, add
-   the Vercel preview URL to Google OAuth redirect URIs, and to
-   Supabase's Site URL config.
-2. **Invite the co-admin** (tied to the Vercel deploy).
-   - Add their Gmail to Google Cloud OAuth → Test users
-   - Mint an invite link from `/admin/invites`
-   - DM them the link
-   - First sign-in auto-creates their profile (Google callback now
-     uses admin client to upsert profiles — bug fixed in commit
-     `4a64fc5`)
-3. **Wire up LINE Login** (Path B). Code is ready in
-   `src/lib/auth/line-jwt-bridge.ts` and `app/api/auth/line/`.
-   Needs LINE Channel ID + Secret in `.env.local`. LINE Login has
-   no test-user cap, so it's the right primary auth before opening
-   to the full 150 members.
-4. **Photo upload UI on pin add.** API route + storage policies
-   exist (`app/api/pins/[id]/photos/route.ts`); the client-side
-   uploader component for the pin form was deferred. Avatar upload
-   in onboarding works as the template to copy from.
-5. **Bootstrap admin via UI instead of SQL.** Currently a fork of
-   this repo would need to insert their own profile row manually.
-   A small `/admin/bootstrap` page (gated by an env var or one-time
-   token) would be friendlier.
-6. **Next.js 15.1.0 has a known CVE** (warning shown on `pnpm
-   install`). Bump to a patched 15.x before launching publicly.
-7. **PWA icons** — `app/manifest.ts` references
-   `/icons/icon-{192,512,maskable-512}.png` files that don't exist
-   yet. Won't break the app but PWA install won't show a real icon.
-8. **CI workflow** — text is in `README.md` ready to paste into
-   `.github/workflows/ci.yml`. The bot account that did the initial
-   commit lacked GitHub `workflow` scope.
+In rough priority:
+
+1. **Photo upload UI on pin add** (CLAUDE.md old item #4 — still not
+   built). The signed-URL API route exists at
+   `app/api/pins/[id]/photos/route.ts`; the client-side uploader was
+   deferred. Avatar upload (via `/api/profile/avatar` route + admin
+   client) is the template to copy from.
+2. **LINE Login**. Channel ID + Secret needed in `.env.local` and
+   Vercel. Code is ready; sign-in button currently dead-ends.
+3. **Custom domain `ourpins.app`**. Owned (or planned to be); not
+   attached to Vercel yet. When attached, update
+   `NEXT_PUBLIC_SITE_URL`, Supabase Site URL, Google OAuth origins,
+   and Maps key referrers.
+4. **SMTP for magic-link emails**. Currently Supabase's default
+   sender (rate-limited ~3/hr, spam-prone). Resend on the
+   `onboarding@resend.dev` sender works zero-setup; Resend + verified
+   domain works better (requires owning the domain).
+5. **Bootstrap admin via UI instead of SQL** (old item #5). For
+   future co-admins / forks of the codebase.
+6. **PWA icons**. Currently uses the GOJ logo for all sizes; works
+   but not optimized. If Mako wants polish, generate 192/512/maskable.
+7. **CI workflow**. Text in README; needs to be committed as
+   `.github/workflows/ci.yml`. Bot lacked `workflow` scope at initial
+   setup; Mako can paste it manually.
+8. **Localize new strings**. `/settings/profile`, the "Revoked" badge,
+   the privacy explainer, and the empty-state copy on dark-mode
+   cards are English-only. EL translations not added.
+9. **Mobile UX pass**. App is shipped but never tested on a real iOS
+   device. Bottom sheets / virtual-keyboard handling / tap targets
+   should be sanity-checked on iPhone.
 
 ---
 
-## Migrations applied (in order)
+## Migrations applied to the cloud DB (in order)
 
-In `supabase/migrations/`, all applied to the cloud project:
+In `supabase/migrations/`:
 
-- `0001_schema.sql` — all tables (profiles, private_profiles,
-  categories, pins, pin_photos, vouches, invites). pgcrypto +
-  pg_trgm extensions.
-- `0002_rls.sql` — RLS policies (originally referenced `'role'`
-  claim; superseded by 0008).
-- `0003_triggers.sql` — creator-auto-vouch on pin INSERT;
-  updated_at trigger.
-- `0004_storage.sql` — pin-photos bucket + storage policies
-  (originally referenced `'role'` claim; superseded by 0008).
-- `0005_search_indexes.sql` — pg_trgm GIN index on
-  profiles.display_name.
-- `0006_auth_hooks.sql` — `public.access_token_hook` (originally
-  set top-level `role` claim — broken; superseded by 0008).
-- `0007_rpc.sql` — `accept_invite` RPC, `delete_user` RPC.
-- `0008_fix_role_claim.sql` — **critical fix.** Replaced the auth
-  hook to set `user_role` instead of overwriting Supabase's
-  reserved `role`. Dropped + recreated every RLS policy that
-  referenced `auth.jwt() ->> 'role'` to use `'user_role'`.
-- `0009_refine_categories.sql` — added Bakeries & sweets, Bars &
-  drinks, Shopping categories.
+- `0001` — schema (tables, extensions)
+- `0002` — RLS policies (originally referenced `'role'` claim)
+- `0003` — triggers (creator-auto-vouch on pin INSERT; updated_at)
+- `0004` — storage bucket + policies (had a buggy avatar INSERT
+  policy that used `split_part` on a non-existent path component;
+  superseded by 0010)
+- `0005` — pg_trgm search indexes
+- `0006` — `access_token_hook` (broken; superseded by 0008)
+- `0007` — `accept_invite` and `delete_user` RPCs
+- `0008` — **critical fix**. Replaced auth hook to set `user_role`
+  instead of overwriting Supabase's reserved `role`. Dropped + recreated
+  every RLS policy that referenced `'role'` to use `'user_role'`.
+- `0009` — added Bakeries & sweets, Bars & drinks, Shopping categories
+- `0010` — rewrote pin-photos storage INSERT policy without the
+  buggy `split_part` (matches the actual `avatars/<uid>/<file>` path)
+- `0011` — security hardening per audit: rebuilt `accept_invite` to
+  reject `p_user != auth.uid()`; added `is_member='true'` to
+  `pins_update_owner`, `vouches_update`, `vouches_delete`,
+  `pin_photos_delete`, `private_profiles_update`
+- `0012` — **critical fix**. 0011 attempted column-level REVOKE on
+  profiles but a broader table-level GRANT took precedence in Postgres
+  so it was a no-op. 0012 revokes the table-level UPDATE and re-grants
+  only `(display_name, avatar_path, display_pref, instagram, website)`.
+  Verified via `information_schema.column_privileges`.
+
+---
+
+## Security model (post-audit)
+
+A security review was run on the deploy branch. Four findings, all
+fixed:
+
+1. **Privilege escalation via self-update of profiles.role /
+   is_member** — fixed by 0012 (column-level grant restriction).
+   Any signed-in user could previously promote themselves to admin in
+   one browser-console line; verified closed by querying
+   `information_schema.column_privileges`.
+2. **accept_invite RPC accepted attacker-controlled p_user** — fixed
+   by 0011 (early `if p_user <> auth.uid() return 'invalid'`).
+3. **Soft-delete bypass via self-update of archived_at /
+   onboarded_at** — same root cause as #1; fixed by 0012.
+4. **pins_update_owner allowed non-members to mutate their old
+   pins** — fixed by 0011 (added `is_member='true'` check).
+
+**Important architecture note from the audit:** the admin client
+(service_role) bypasses RLS *and* column grants, which is why several
+routes use it deliberately:
+- `app/api/auth/google/callback/route.ts` and `magic/callback` upsert
+  profiles via admin (no INSERT policy on profiles by design).
+- `app/api/onboarding/route.ts` uses admin for both
+  `profiles.update(...)` (to set the privileged `onboarded_at`) and
+  `private_profiles.upsert` (no INSERT policy).
+- `app/api/profile/avatar/route.ts` uses admin to write to storage
+  (avoids RLS entirely).
+- `app/api/profile/route.ts` (PATCH for self-edit) uses the *user's*
+  session client because it only touches grantable columns.
 
 ---
 
 ## Categories (current)
 
-11 categories seeded, sort order in parens:
+11, seeded in `supabase/seed.sql`:
 
-1. Restaurants (10) — `#c9694b` UtensilsCrossed
-2. Cafés (20) — `#d8c8a4` Coffee
-3. Bakeries & sweets (25) — `#db8b6f` Croissant
-4. Bars & drinks (28) — `#213057` Wine
-5. Greek-product shops (30) — `#3a4d8a` ShoppingBag
-6. Shopping (35) — `#5c6ea7` ShoppingCart
-7. Weekend trips (40) — `#2c3d72` TrainFront
-8. Things to do (50) — `#6e8c4f` Sparkles
-9. Onsen (60) — `#8593c2` Droplet
-10. Hiking (70) — `#41552d` Mountain
-11. Family-friendly (80) — `#e9b29e` Users
+Restaurants (10), Cafés (20), Bakeries & sweets (25), Bars & drinks
+(28), Greek-product shops (30), Shopping (35), Weekend trips (40),
+Things to do (50), Onsen (60), Hiking (70), Family-friendly (80).
 
-Categories are frozen in v1 (no admin CRUD UI). Edit
-`supabase/seed.sql` + add a migration to change.
+Frozen in v1 — no admin CRUD UI. To change: add a migration.
 
 ---
 
-## Key file map
+## Key file map (additions / changes since the original plan)
 
 ```
 app/
-├── (root layouts/)
 ├── api/
-│   ├── auth/{line,google}/{start,callback}/route.ts
-│   ├── pins/route.ts                          # POST create
-│   ├── pins/[id]/route.ts                     # PATCH update + DELETE soft-archive
-│   ├── pins/[id]/vouch/route.ts               # POST/DELETE vouch (with comment)
-│   ├── pins/[id]/photos/route.ts              # signed URL minting (only)
-│   ├── pins/by-place/[placeId]/route.ts       # lookup by google_place_id
-│   ├── admin/invites/...                      # mint + revoke
-│   ├── account/delete/route.ts
-│   └── onboarding/route.ts
-├── admin/{members,invites,moderation}/        # 3 admin tabs
-├── members/, settings/, sign-in/, no-invite/, invite/[token]/, onboarding/
-└── pins/{[id], new}/page.tsx
+│   ├── auth/magic/callback/route.ts       # NEW: magic-link callback
+│   ├── profile/route.ts                   # NEW: PATCH edit profile
+│   └── profile/avatar/route.ts            # NEW: server-side upload via admin client
+├── invite/[token]/route.ts                # CHANGED: was page.tsx; now a
+│                                          # Route Handler because Next 15
+│                                          # disallows cookies().set() in
+│                                          # Server Components
+└── settings/profile/page.tsx              # NEW: edit profile page
 
 src/
 ├── components/
-│   ├── map/MapView.tsx                        # POI click + marker click
-│   ├── map/PinSheet.tsx                       # bottom sheet with two modes
-│   ├── map/PlaceInfoCard.tsx                  # Google data card
-│   ├── map/FilterBar.tsx
-│   ├── pins/{PinForm, InlineAddPinForm, PinEditForm, VouchPanel}.tsx
-│   ├── admin/{AdminMembersTable, AdminInvitesPanel, AdminModerationFeed}.tsx
-│   ├── onboarding/{OnboardingForm, AvatarUploader}.tsx
-│   ├── settings/{SignOutButton, DeleteAccountForm}.tsx
-│   ├── layout/{AppShell, LanguageToggle, ThemeToggle}.tsx
-│   └── providers/QueryProvider.tsx
-├── lib/
-│   ├── supabase/{server, browser, middleware, realtime, types}.ts
-│   ├── auth/{line-jwt-bridge, accept-invite, session}.ts
-│   ├── maps/{loader, places}.ts               # singleton Loader (was a bug source)
-│   ├── schemas/{pin, profile, invite}.ts      # zod
-│   ├── env.ts, time.ts, utils.ts
-└── stores/filters.ts                          # zustand persisted
-
-supabase/migrations/0001..0009.sql             # see above
-supabase/seed.sql                              # categories + bootstrap admin block
+│   ├── auth/MagicLinkForm.tsx             # NEW: client-side magic link form
+│   └── settings/ProfileEditForm.tsx       # NEW
+└── lib/schemas/profile.ts                 # CHANGED: instagram/website
+                                            # validation loosened; auto-prepend
+                                            # https://
 ```
 
 ---
 
-## Common dev workflow
+## Critical gotchas encountered & resolved
 
-```bash
-cd ~/code/our-pins
-git pull
-pnpm dev
-```
+(Reference for future sessions so the same bugs don't get re-discovered.)
 
-After schema changes:
-```bash
-supabase db push      # applies any new migrations
-```
-
-To verify env passes:
-```bash
-cat .env.local        # all 11 vars set, none empty (placeholders are fine for unused)
-```
-
----
-
-## Known quirks / things you've already discovered
-
-- `Buffer` is not available in Edge runtime middleware — use the
-  custom `decodeJwtBody` helper that uses `atob`.
-- `@googlemaps/js-api-loader` is a process-wide singleton; all
-  components must use the same `libraries` array. We share via
-  `getMapsLoader()` in `src/lib/maps/loader.ts`.
-- Supabase reserves the top-level JWT `role` claim. Don't ever
-  overwrite it. Our app role lives at `user_role`.
-- Categories must be fetched server-side with the admin client to
-  bypass RLS — they're global config, not user data.
-- Google profile callbacks need the admin client to upsert profiles
-  (RLS has no INSERT policy on profiles by design).
-- After flipping `is_member` or `role` on a profile, the user must
-  sign out and back in for the JWT to refresh. Force via
+- **Auth URL config is in three places**: NEXT_PUBLIC_SITE_URL (Vercel
+  env), Supabase Auth Site URL + Redirect URLs, Google Cloud OAuth
+  origins + redirect URIs, and Maps API key referrers. All must agree
+  for a given environment.
+- **Vercel pins pnpm to `packageManager` in package.json** (pnpm 9),
+  while Mako's Mac runs pnpm 11. Type resolution and lockfile behavior
+  can differ — be defensive.
+- **Next 15 disallows `cookies().set()` in Server Components**. Use a
+  Route Handler or Server Action instead.
+- **`next build` runs strict TS and lint by default**. `pnpm dev`
+  doesn't. We've set `typescript.ignoreBuildErrors: true` to unblock
+  deploys; type errors live on but don't gate prod.
+- **Postgres column grants vs RLS**: column-level REVOKE is a no-op
+  if a broader table-level GRANT exists. Always revoke at the higher
+  level first, then re-grant the specific columns you want.
+- **DB CHECK constraints stay strict even after relaxing app-level
+  Zod validation**. `profiles.instagram` requires NULL or matches
+  `^[a-zA-Z0-9._]{1,30}$` — empty strings violate. Trim and coerce to
+  null in API routes (already done in onboarding and /api/profile).
+- **Middleware redirects all routes to /onboarding for users who
+  haven't completed onboarding** — including `/api/profile/avatar`,
+  which was breaking avatar upload during onboarding. The middleware
+  allow-list now includes `/api/onboarding` AND `/api/profile/avatar`.
+- **Storage policy paths**: avatar uploads go to
+  `avatars/<auth.uid()>/profile.jpg` (note the subfolder; 0010 fixed
+  the original schema that assumed `avatars/<uid>.<ext>`).
+- **Google reserves the top-level JWT `role` claim**. App role lives
+  at `user_role`.
+- **After flipping `is_member` or `role`**, the user must sign out and
+  back in for the JWT to refresh. Force via
   `supabase.auth.signOut(userId)` from the admin client if needed.
-- The new Places API field mask matters for billing. We use only
-  Essentials-tier fields for the basic data + Pro fields (photos,
-  hours, contact) only when displaying in the sheet — careful when
-  expanding queries.
 
 ---
 
 ## How to use this file in a new conversation
 
-If you're picking this up in a fresh chat:
-
 1. Read this whole file first.
-2. The user may have made progress beyond what's documented here —
-   ask them what they did since the last commit timestamp visible
-   in `git log -1 --format=%ci` on the `claude/build-our-pins-project-LgwVx` branch.
-3. Don't re-fetch the implementation plan unless they ask. This
-   file is the source of truth for current state.
-4. Don't suggest LINE / Vercel / OAuth setup steps that have
-   already been done (check the "What works right now" and "Open
-   issues" sections above).
+2. Ask Mako what she's working on — there's been a lot of recent work,
+   and TODOs may have shifted.
+3. Use git log to confirm what's actually on main vs. the feature
+   branch.
+4. Don't suggest setup steps that have already been done — production
+   is live, OAuth is configured, RLS audit is closed, etc.
