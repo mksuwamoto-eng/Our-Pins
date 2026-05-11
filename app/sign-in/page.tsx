@@ -2,6 +2,17 @@ import { getTranslations } from 'next-intl/server';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { publicEnv } from '@/lib/env';
 
+// Supabase error messages vary by version (e.g. "Token has expired",
+// "invalid_grant", "Email link is invalid or has expired"); match loosely
+// so the common case still gets the friendly copy.
+function classifyAuthError(raw: string): 'expired' | 'generic' {
+  const s = raw.toLowerCase();
+  if (s.includes('expire') || s.includes('invalid') || s.includes('code') || s.includes('otp') || s.includes('token')) {
+    return 'expired';
+  }
+  return 'generic';
+}
+
 export default async function SignInPage({
   searchParams,
 }: {
@@ -11,6 +22,9 @@ export default async function SignInPage({
   const params = await searchParams;
   const nextParam = params.next ?? '/';
   const nextEncoded = encodeURIComponent(nextParam);
+  const friendlyError = params.error
+    ? t(classifyAuthError(params.error) === 'expired' ? 'linkExpired' : 'signInError')
+    : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
@@ -22,6 +36,15 @@ export default async function SignInPage({
       />
       <h1 className="mb-2 text-center font-serif text-3xl text-[var(--fg)]">{t('signInTitle')}</h1>
       <p className="mb-8 text-center text-sm text-[var(--muted)]">{t('needInvite')}</p>
+
+      {friendlyError ? (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)] px-4 py-3 text-sm text-[var(--fg)]"
+        >
+          {friendlyError}
+        </div>
+      ) : null}
 
       <div className="card flex flex-col gap-3 p-6">
         <MagicLinkForm siteUrl={publicEnv.NEXT_PUBLIC_SITE_URL} next={nextParam} />
@@ -50,10 +73,6 @@ export default async function SignInPage({
         We use sign-in only to verify it&apos;s you. We never read your inbox or contacts. Your
         email is visible only to community admins.
       </p>
-
-      {params.error ? (
-        <p className="mt-4 text-center text-sm text-[var(--color-terracotta-500)]">{params.error}</p>
-      ) : null}
     </main>
   );
 }

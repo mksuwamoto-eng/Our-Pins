@@ -22,12 +22,12 @@ interface Props {
 export function MapView({ initialPins, categories }: Props) {
   const t = useTranslations('map');
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const router = useRouter();
 
   const { categoryIds, prefectures, search, viewport, setViewport } = useFiltersStore();
   const [pins, setPins] = useState<Pin[]>(initialPins);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selection, setSelection] = useState<SheetSelection>(null);
 
   const categoryById = useMemo(() => {
@@ -54,7 +54,7 @@ export function MapView({ initialPins, categories }: Props) {
     let active = true;
     getMapsLoader().load().then((google) => {
       if (!active || !containerRef.current) return;
-      const map = new google.maps.Map(containerRef.current, {
+      const m = new google.maps.Map(containerRef.current, {
         center: viewport.center ?? JAPAN_CENTER,
         zoom: viewport.zoom ?? 5,
         mapId: 'OUR_PINS_MAP',
@@ -62,16 +62,16 @@ export function MapView({ initialPins, categories }: Props) {
         zoomControl: true,
         clickableIcons: true,
       });
-      map.addListener('idle', () => {
-        const c = map.getCenter();
-        const z = map.getZoom();
+      m.addListener('idle', () => {
+        const c = m.getCenter();
+        const z = m.getZoom();
         if (c && typeof z === 'number') {
           setViewport({ center: { lat: c.lat(), lng: c.lng() }, zoom: z });
         }
       });
       // Click anywhere — if it's a POI, capture place_id and prevent the
       // default Google info window so our sheet handles it.
-      map.addListener('click', (event: google.maps.MapMouseEvent & { placeId?: string; stop?: () => void }) => {
+      m.addListener('click', (event: google.maps.MapMouseEvent & { placeId?: string; stop?: () => void }) => {
         if (event.placeId) {
           event.stop?.();
           const existing = pinByPlaceIdRef.current.get(event.placeId);
@@ -88,7 +88,7 @@ export function MapView({ initialPins, categories }: Props) {
           }
         }
       });
-      mapRef.current = map;
+      setMap(m);
     });
     return () => {
       active = false;
@@ -105,7 +105,6 @@ export function MapView({ initialPins, categories }: Props) {
 
   // Render markers for our pins.
   useEffect(() => {
-    const map = mapRef.current;
     if (!map) return;
     clustererRef.current?.clearMarkers();
 
@@ -134,7 +133,7 @@ export function MapView({ initialPins, categories }: Props) {
     return () => {
       clustererRef.current?.clearMarkers();
     };
-  }, [pins, categoryIds, prefectures, search, categoryById]);
+  }, [map, pins, categoryIds, prefectures, search, categoryById]);
 
   function handlePinSaved(p: Pin) {
     setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
