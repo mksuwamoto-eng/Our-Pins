@@ -14,12 +14,18 @@ interface Row {
   real_name: string | null;
 }
 
+type BusyKey = `${string}:${'member' | 'role'}`;
+
 export function AdminMembersTable({ rows }: { rows: Row[] }) {
   const router = useRouter();
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState<BusyKey | null>(null);
 
-  async function update(id: string, patch: Partial<Pick<Row, 'is_member' | 'role'>>) {
-    setBusy(id);
+  async function update(
+    id: string,
+    field: 'member' | 'role',
+    patch: Partial<Pick<Row, 'is_member' | 'role'>>,
+  ) {
+    setBusy(`${id}:${field}`);
     const supabase = getSupabaseBrowserClient();
     await supabase.from('profiles').update(patch).eq('id', id);
     router.refresh();
@@ -48,18 +54,24 @@ export function AdminMembersTable({ rows }: { rows: Row[] }) {
             <td className="text-xs text-[var(--muted)]">{new Date(r.created_at).toLocaleDateString()}</td>
             <td className="flex gap-2 py-2">
               <button
-                disabled={busy === r.id}
-                onClick={() => update(r.id, { is_member: !r.is_member })}
-                className="rounded border border-[var(--border)] px-2 py-1"
+                disabled={busy?.startsWith(`${r.id}:`)}
+                aria-busy={busy === `${r.id}:member`}
+                onClick={() => update(r.id, 'member', { is_member: !r.is_member })}
+                className="rounded border border-[var(--border)] px-2 py-1 disabled:cursor-wait disabled:opacity-60"
               >
-                {r.is_member ? 'Revoke' : 'Activate'}
+                {busy === `${r.id}:member`
+                  ? r.is_member ? 'Revoking…' : 'Activating…'
+                  : r.is_member ? 'Revoke' : 'Activate'}
               </button>
               <button
-                disabled={busy === r.id}
-                onClick={() => update(r.id, { role: r.role === 'admin' ? 'member' : 'admin' })}
-                className="rounded border border-[var(--border)] px-2 py-1"
+                disabled={busy?.startsWith(`${r.id}:`)}
+                aria-busy={busy === `${r.id}:role`}
+                onClick={() => update(r.id, 'role', { role: r.role === 'admin' ? 'member' : 'admin' })}
+                className="rounded border border-[var(--border)] px-2 py-1 disabled:cursor-wait disabled:opacity-60"
               >
-                {r.role === 'admin' ? 'Demote' : 'Promote'}
+                {busy === `${r.id}:role`
+                  ? r.role === 'admin' ? 'Demoting…' : 'Promoting…'
+                  : r.role === 'admin' ? 'Demote' : 'Promote'}
               </button>
             </td>
           </tr>

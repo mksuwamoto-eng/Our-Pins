@@ -8,10 +8,12 @@ import { publicEnv } from '@/lib/env';
 
 export function AdminInvitesPanel({ invites }: { invites: Invite[] }) {
   const t = useTranslations('admin');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const [note, setNote] = useState('');
   const [count, setCount] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [revoking, setRevoking] = useState<string | null>(null);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -28,8 +30,10 @@ export function AdminInvitesPanel({ invites }: { invites: Invite[] }) {
   }
 
   async function revoke(token: string) {
+    setRevoking(token);
     await fetch(`/api/admin/invites/${token}`, { method: 'DELETE' });
     router.refresh();
+    setRevoking(null);
   }
 
   function copyLink(token: string) {
@@ -62,9 +66,10 @@ export function AdminInvitesPanel({ invites }: { invites: Invite[] }) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white"
+          aria-busy={busy}
+          className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white disabled:cursor-wait disabled:opacity-60"
         >
-          {t('createInvite')}
+          {busy ? tCommon('loading') : t('createInvite')}
         </button>
       </form>
 
@@ -102,8 +107,13 @@ export function AdminInvitesPanel({ invites }: { invites: Invite[] }) {
                       <button onClick={() => copyLink(i.token)} className="rounded border border-[var(--border)] px-2 py-1">
                         {t('copyLink')}
                       </button>
-                      <button onClick={() => revoke(i.token)} className="rounded border border-[var(--border)] px-2 py-1">
-                        {t('revoke')}
+                      <button
+                        onClick={() => revoke(i.token)}
+                        disabled={revoking === i.token}
+                        aria-busy={revoking === i.token}
+                        className="rounded border border-[var(--border)] px-2 py-1 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {revoking === i.token ? tCommon('loading') : t('revoke')}
                       </button>
                     </>
                   ) : null}
