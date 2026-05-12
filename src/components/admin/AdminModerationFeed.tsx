@@ -48,10 +48,13 @@ export function AdminModerationFeed({ pins, showArchived }: { pins: Row[]; showA
             </div>
             <button
               disabled={busy === p.id}
+              aria-busy={busy === p.id}
               onClick={() => toggleArchive(p.id, !!p.archived_at)}
-              className="rounded border border-[var(--border)] px-2 py-1"
+              className="rounded border border-[var(--border)] px-2 py-1 disabled:cursor-wait disabled:opacity-60"
             >
-              {p.archived_at ? 'Restore' : 'Archive'}
+              {busy === p.id
+                ? p.archived_at ? 'Restoring…' : 'Archiving…'
+                : p.archived_at ? 'Restore' : 'Archive'}
             </button>
           </li>
         ))}
