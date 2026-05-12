@@ -36,6 +36,14 @@ export async function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/members">Members</Link>
+          <a
+            href="https://drive.google.com/drive/folders/1nLGcaYZOwoO-2tFYKllJqBsfa4pzCTvy?usp=sharing"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open shared Google Drive (members can upload)"
+          >
+            Files <span aria-hidden="true">↗</span>
+          </a>
           {userRole === 'admin' ? <Link href="/admin/members">{tAdmin('title')}</Link> : null}
           <Link href="/settings">{tSettings('title')}</Link>
           <LanguageToggle />
