@@ -63,6 +63,13 @@
     "pinsCount": "{count, plural, one {# pin} other {# pins}}",
     "vouchesCount": "{count, plural, one {# εγγύηση} other {# εγγυήσεις}}"
   },
+  "activity": {
+    "title": "Δραστηριότητα",
+    "pinned": "πρόσθεσε",
+    "vouchedFor": "εγγυήθηκε για",
+    "empty": "Τίποτα ακόμη. Πρόσθεσε ένα μέρος για να ξεκινήσει η δραστηριότητα.",
+    "formerMember": "Πρώην μέλος"
+  },
   "settings": {
     "title": "Ρυθμίσεις",
     "language": "Γλώσσα",
