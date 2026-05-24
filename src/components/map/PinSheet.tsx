@@ -4,7 +4,7 @@ import { Drawer } from 'vaul';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Pencil, X } from 'lucide-react';
+import { Check, Pencil, Share2, X } from 'lucide-react';
 import { getMapsLoader } from '@/lib/maps/loader';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { useRealtimeVouches } from '@/lib/supabase/realtime';
@@ -43,6 +43,7 @@ export function PinSheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-30 bg-black/30" />
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
+          {selection?.kind === 'pin' ? <ShareButton pinId={selection.pin.id} /> : null}
           <Drawer.Close
             aria-label="Close"
             className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--foreground)]"
@@ -383,6 +384,38 @@ function ExistingPinView({
 function labelFor(p: Profile | undefined): string {
   if (!p) return 'Former member';
   return p.display_name;
+}
+
+function ShareButton({ pinId }: { pinId: string }) {
+  const [copied, setCopied] = useState(false);
+  async function handleShare() {
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin}/pins/${pinId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API unavailable (insecure context, permission denied) — silent.
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      aria-label="Copy share link"
+      className="absolute right-14 top-3 z-10 flex h-8 items-center gap-1 rounded-full px-2 text-xs text-[var(--muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--foreground)]"
+    >
+      {copied ? (
+        <>
+          <Check className="h-4 w-4" />
+          <span className="pr-1">Copied</span>
+        </>
+      ) : (
+        <Share2 className="h-4 w-4" />
+      )}
+    </button>
+  );
 }
 
 function NewPlaceView({
