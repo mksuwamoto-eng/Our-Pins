@@ -2,7 +2,7 @@
 
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { useFiltersStore } from '@/stores/filters';
@@ -29,8 +29,38 @@ export function MapView({ initialPins, categories }: Props) {
   const { categoryIds, prefectures, search, viewport, setViewport } = useFiltersStore();
   const [pins, setPins] = useState<Pin[]>(initialPins);
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [selection, setSelection] = useState<SheetSelection>(null);
+  // Place selections (clicks on Google POIs that aren't pinned yet) live in
+  // local state because they have no shareable ID. Pin selections live in the
+  // URL (?pin=<id>) so they survive reloads and can be shared/back-buttoned.
+  const [placeSelection, setPlaceSelection] = useState<SheetSelection>(null);
   const [tilesLoaded, setTilesLoaded] = useState(false);
+  const searchParams = useSearchParams();
+  const pinIdFromUrl = searchParams.get('pin');
+
+  const selection: SheetSelection = useMemo(() => {
+    if (pinIdFromUrl) {
+      const pin = pins.find((p) => p.id === pinIdFromUrl);
+      if (pin) return { kind: 'pin', pin };
+    }
+    return placeSelection;
+  }, [pinIdFromUrl, pins, placeSelection]);
+
+  // Stable ref so click handlers bound inside the one-shot map init effect
+  // always call the latest router instance.
+  const routerRef = useRef(router);
+  useEffect(() => {
+    routerRef.current = router;
+  }, [router]);
+
+  function selectPin(pinId: string) {
+    routerRef.current.replace(`/?pin=${pinId}`, { scroll: false });
+    setPlaceSelection(null);
+  }
+
+  function clearSelection() {
+    routerRef.current.replace('/', { scroll: false });
+    setPlaceSelection(null);
+  }
 
   const categoryById = useMemo(() => {
     const m = new Map<string, Category>();
@@ -79,9 +109,10 @@ export function MapView({ initialPins, categories }: Props) {
           event.stop?.();
           const existing = pinByPlaceIdRef.current.get(event.placeId);
           if (existing) {
-            setSelection({ kind: 'pin', pin: existing });
+            selectPin(existing.id);
           } else {
-            setSelection({
+            routerRef.current.replace('/', { scroll: false });
+            setPlaceSelection({
               kind: 'place',
               placeId: event.placeId,
               location: event.latLng
@@ -116,7 +147,11 @@ export function MapView({ initialPins, categories }: Props) {
       if (prefectures.length && !prefectures.includes(p.prefecture)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        if (!p.name.toLowerCase().includes(q) && !p.vouch_note.toLowerCase().includes(q)) return false;
+        // Note: substring match only. Japanese-script names won't match Romaji
+        // queries (e.g., "Ootoya" misses 大戸屋). Proper fix requires a
+        // transliterated name column or a romaji search index.
+        const haystack = `${p.name}\n${p.vouch_note}\n${p.address}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
       return true;
     });
@@ -128,7 +163,7 @@ export function MapView({ initialPins, categories }: Props) {
         map,
         content: createMarkerEl(cat?.color ?? '#3a4d8a'),
       });
-      marker.addListener('click', () => setSelection({ kind: 'pin', pin }));
+      marker.addListener('click', () => selectPin(pin.id));
       return marker;
     });
 
@@ -140,16 +175,17 @@ export function MapView({ initialPins, categories }: Props) {
 
   function handlePinSaved(p: Pin) {
     setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
-    setSelection({ kind: 'pin', pin: p });
+    selectPin(p.id);
   }
 
   function handlePinUpdated(p: Pin) {
     setPins((prev) => prev.map((x) => (x.id === p.id ? p : x)));
-    setSelection({ kind: 'pin', pin: p });
+    // Sheet auto-rerenders from the URL + updated pins list; no selection set.
   }
 
   function handlePinDeleted(id: string) {
     setPins((prev) => prev.filter((x) => x.id !== id));
+    if (pinIdFromUrl === id) clearSelection();
   }
 
   return (
@@ -175,7 +211,7 @@ export function MapView({ initialPins, categories }: Props) {
       <PinSheet
         selection={selection}
         categories={categories}
-        onClose={() => setSelection(null)}
+        onClose={clearSelection}
         onPinSaved={handlePinSaved}
         onPinUpdated={handlePinUpdated}
         onPinDeleted={handlePinDeleted}
