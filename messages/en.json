@@ -63,6 +63,13 @@
     "pinsCount": "{count, plural, one {# pin} other {# pins}}",
     "vouchesCount": "{count, plural, one {# vouch} other {# vouches}}"
   },
+  "activity": {
+    "title": "Activity",
+    "pinned": "pinned",
+    "vouchedFor": "vouched for",
+    "empty": "Nothing yet. Pin a place to get the feed started.",
+    "formerMember": "Former member"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",

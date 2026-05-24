@@ -35,6 +35,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
           {t('name')}
         </Link>
         <nav className="flex items-center gap-3 text-sm">
+          <Link href="/activity">Activity</Link>
           <Link href="/members">Members</Link>
           <a
             href="https://drive.google.com/drive/folders/1nLGcaYZOwoO-2tFYKllJqBsfa4pzCTvy?usp=sharing"
