@@ -21,6 +21,7 @@ interface Props {
 
 export function MapView({ initialPins, categories }: Props) {
   const t = useTranslations('map');
+  const tCommon = useTranslations('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const router = useRouter();
@@ -29,6 +30,7 @@ export function MapView({ initialPins, categories }: Props) {
   const [pins, setPins] = useState<Pin[]>(initialPins);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selection, setSelection] = useState<SheetSelection>(null);
+  const [tilesLoaded, setTilesLoaded] = useState(false);
 
   const categoryById = useMemo(() => {
     const m = new Map<string, Category>();
@@ -62,6 +64,7 @@ export function MapView({ initialPins, categories }: Props) {
         zoomControl: true,
         clickableIcons: true,
       });
+      google.maps.event.addListenerOnce(m, 'tilesloaded', () => setTilesLoaded(true));
       m.addListener('idle', () => {
         const c = m.getCenter();
         const z = m.getZoom();
@@ -152,6 +155,14 @@ export function MapView({ initialPins, categories }: Props) {
   return (
     <div className="relative h-[calc(100vh-3.25rem)] w-full">
       <div ref={containerRef} className="absolute inset-0" />
+      {!tilesLoaded ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface)] text-sm text-[var(--muted)]"
+        >
+          {tCommon('loading')}
+        </div>
+      ) : null}
       <FilterBar categories={categories} />
       <button
         onClick={() => router.push('/pins/new')}

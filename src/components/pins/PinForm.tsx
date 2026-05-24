@@ -126,7 +126,7 @@ export function PinForm({ categories }: { categories: Category[] }) {
 
       <button
         type="submit"
-        disabled={form.formState.isSubmitting}
+        disabled={!place || form.formState.isSubmitting}
         className="rounded-lg bg-[var(--primary)] px-4 py-3 font-medium text-white disabled:opacity-60"
       >
         {form.formState.isSubmitting ? tCommon('loading') : t('save')}

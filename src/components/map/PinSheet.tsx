@@ -4,7 +4,7 @@ import { Drawer } from 'vaul';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Pencil } from 'lucide-react';
+import { Pencil, X } from 'lucide-react';
 import { getMapsLoader } from '@/lib/maps/loader';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { useRealtimeVouches } from '@/lib/supabase/realtime';
@@ -43,6 +43,12 @@ export function PinSheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-30 bg-black/30" />
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
+          <Drawer.Close
+            aria-label="Close"
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--foreground)]"
+          >
+            <X className="h-5 w-5" />
+          </Drawer.Close>
           {selection?.kind === 'pin' ? (
             <ExistingPinView
               pin={selection.pin}
@@ -144,6 +150,7 @@ function ExistingPinView({
   const [editing, setEditing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useRealtimeVouches(pin.id);
 
@@ -220,7 +227,7 @@ function ExistingPinView({
     return () => {
       cancelled = true;
     };
-  }, [pin.id]);
+  }, [pin.id, refreshKey]);
 
   const otherVouches = vouches.filter((v) => v.voucher_id !== pin.created_by);
 
@@ -367,7 +374,7 @@ function ExistingPinView({
           })}
         </ul>
 
-        <VouchPanel pinId={pin.id} />
+        <VouchPanel pinId={pin.id} onChange={() => setRefreshKey((k) => k + 1)} />
       </div>
     </>
   );

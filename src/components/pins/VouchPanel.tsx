@@ -6,7 +6,7 @@ import { CheckCircle, Heart } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { cn } from '@/lib/utils';
 
-export function VouchPanel({ pinId }: { pinId: string }) {
+export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () => void }) {
   const t = useTranslations('pin');
   const [vouched, setVouched] = useState(false);
   const [comment, setComment] = useState('');
@@ -48,6 +48,7 @@ export function VouchPanel({ pinId }: { pinId: string }) {
       if (!res.ok) throw new Error(await res.text());
       setVouched(true);
       setShowCommentInput(false);
+      onChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
     } finally {
@@ -63,6 +64,7 @@ export function VouchPanel({ pinId }: { pinId: string }) {
       if (!res.ok) throw new Error(await res.text());
       setVouched(false);
       setComment('');
+      onChange?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
     } finally {

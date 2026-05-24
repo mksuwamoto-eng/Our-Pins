@@ -60,14 +60,20 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <h2 className="mt-6 font-serif text-xl">Pins</h2>
-        <ul className="mt-2 space-y-2">
-          {(pins ?? []).map((p) => (
-            <li key={p.id} className="card p-3">
-              <p className="font-medium">{p.name}</p>
-              <p className="text-sm text-[var(--muted)]">{p.address}</p>
-            </li>
-          ))}
-        </ul>
+        {pins && pins.length > 0 ? (
+          <ul className="mt-2 space-y-2">
+            {pins.map((p) => (
+              <li key={p.id} className="card p-3">
+                <p className="font-medium">{p.name}</p>
+                <p className="text-sm text-[var(--muted)]">{p.address}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            {member.display_name} hasn&apos;t pinned anything yet.
+          </p>
+        )}
       </div>
     </AppShell>
   );
