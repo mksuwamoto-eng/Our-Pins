@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { translateVouchComment } from '@/lib/i18n/translate';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,13 +18,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { error } = await supabase
     .from('vouches')
     .upsert(
-      { pin_id: id, voucher_id: user.id, comment },
+      // Reset translations on every write; after() refreshes them when
+      // there's a comment to translate.
+      { pin_id: id, voucher_id: user.id, comment, translations: null },
       { onConflict: 'pin_id,voucher_id' },
     );
 
   if (error) {
     console.error('vouch upsert failed:', error);
     return new NextResponse('server error', { status: 500 });
+  }
+  if (comment) {
+    after(() => translateVouchComment(id, user.id, comment));
   }
   return NextResponse.json({ ok: true });
 }

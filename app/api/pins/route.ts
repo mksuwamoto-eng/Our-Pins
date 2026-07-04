@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { translatePinNote } from '@/lib/i18n/translate';
 import { pinCreateSchema } from '@/lib/schemas/pin';
 
 export async function POST(req: Request) {
@@ -44,5 +45,7 @@ export async function POST(req: Request) {
     console.error('pin insert failed:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
+  // Language bridge: translate the note after the response is sent.
+  after(() => translatePinNote(data.id, data.vouch_note));
   return NextResponse.json(data);
 }
