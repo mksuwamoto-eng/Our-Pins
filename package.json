@@ -23,6 +23,7 @@
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@googlemaps/js-api-loader": "1.16.8",
     "@googlemaps/markerclusterer": "2.5.3",
     "@hookform/resolvers": "3.9.1",

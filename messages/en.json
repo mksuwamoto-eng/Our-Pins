@@ -125,6 +125,19 @@
     "promoteAdmin": "Promote to admin",
     "demoteAdmin": "Demote to member"
   },
+  "concierge": {
+    "title": "Ask Parea",
+    "subtitle": "Answers come only from the community's vouches.",
+    "placeholder": "Where should I go for…?",
+    "send": "Ask",
+    "close": "Close",
+    "thinking": "Parea is thinking…",
+    "empty": "Ask anything — \"Where do I take my parents for 3 days near Tokyo?\" — and Parea answers from what the community has vouched for, citing who said it.",
+    "errorGeneric": "Something went wrong. Try again.",
+    "errorBudget": "Parea has used up this month's budget. Try again next month.",
+    "errorDaily": "You've reached today's question limit. Ask again tomorrow.",
+    "errorNotConfigured": "Parea isn't set up yet — ask Mako."
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
