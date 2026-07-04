@@ -97,6 +97,32 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 
 ---
 
+## Built but NOT yet live (July 2026 session — needs Mako's action)
+
+A large session added, in four commits on main (audit fixes, i18n sweep,
+Parea Concierge, language bridge):
+
+- **Parea Concierge** — chat FAB (bottom-left of the map) →
+  `/api/concierge` answers questions from the community's pins/vouches
+  only, via Claude (`claude-opus-4-8`), citing members by name;
+  `[[pin:id|name]]` markers render as deep-links. Full-corpus prompt
+  (no vector store — deliberate at this scale) with prompt caching.
+  Spend caps: `concierge_queries` log table, default $10/month
+  (`CONCIERGE_MONTHLY_BUDGET_USD`) + 20 queries/user/day.
+- **Language bridge** — pin notes + vouch comments auto-translated
+  EL↔EN on write (via `next/server after()`), stored in
+  `translations jsonb`; PinSheet shows the reader's language with a
+  "translated" toggle. No backfill of old rows yet.
+
+**To go live, Mako must:**
+1. `pnpm db:push` — apply migrations 0013 + 0014 to the cloud DB
+   (Claude was blocked from pushing to prod).
+2. Add `ANTHROPIC_API_KEY` to `.env.local` AND Vercel env (until then
+   the Concierge returns a friendly 503 and translations are skipped).
+3. Push main to deploy. Then user-test both features.
+
+---
+
 ## Open issues / pending TODOs
 
 In rough priority:
@@ -123,9 +149,10 @@ In rough priority:
 7. **CI workflow**. Text in README; needs to be committed as
    `.github/workflows/ci.yml`. Bot lacked `workflow` scope at initial
    setup; Mako can paste it manually.
-8. **Localize new strings**. `/settings/profile`, the "Revoked" badge,
-   the privacy explainer, and the empty-state copy on dark-mode
-   cards are English-only. EL translations not added.
+8. ~~Localize new strings~~ — DONE (July 2026): all member-facing
+   strings extracted to messages/{en,el}.json with Greek translations;
+   admin panels intentionally left English. Also: backfill
+   `translations` for pre-existing pins/vouches (script not written).
 9. **Mobile UX pass**. App is shipped but never tested on a real iOS
    device. Bottom sheets / virtual-keyboard handling / tap targets
    should be sanity-checked on iPhone.
@@ -160,6 +187,10 @@ In `supabase/migrations/`:
   so it was a no-op. 0012 revokes the table-level UPDATE and re-grants
   only `(display_name, avatar_path, display_pref, instagram, website)`.
   Verified via `information_schema.column_privileges`.
+- `0013` — Concierge query log (`concierge_queries`, RLS on with no
+  policies = service-role only). **NOT yet applied to cloud.**
+- `0014` — `pins.translations` + `vouches.translations` jsonb for the
+  language bridge. **NOT yet applied to cloud.**
 
 ---
 
