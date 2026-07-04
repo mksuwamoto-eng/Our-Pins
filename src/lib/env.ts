@@ -13,6 +13,9 @@ const serverSchema = publicSchema.extend({
   LINE_CHANNEL_ID: z.string().min(1),
   LINE_CHANNEL_SECRET: z.string().min(1),
   GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
+  // Optional: the Parea Concierge returns 503 until this is set.
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  CONCIERGE_MONTHLY_BUDGET_USD: z.coerce.number().positive().optional(),
 });
 
 export const publicEnv = publicSchema.parse({

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { useFiltersStore } from '@/stores/filters';
+import { Concierge } from '@/components/concierge/Concierge';
 import { useRealtimePins } from '@/lib/supabase/realtime';
 import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category, Pin } from '@/lib/supabase/types';
@@ -205,6 +206,7 @@ export function MapView({ initialPins, categories }: Props) {
         </div>
       ) : null}
       <FilterBar categories={categories} />
+      <Concierge />
       <button
         onClick={() => router.push('/pins/new')}
         aria-label={t('addPin')}
