@@ -1,6 +1,7 @@
 'use client';
 
 import { ExternalLink, Globe, Phone, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface PlaceDetails {
   placeId: string;
@@ -18,6 +19,7 @@ export interface PlaceDetails {
 }
 
 export function PlaceInfoCard({ place }: { place: PlaceDetails }) {
+  const t = useTranslations('pin');
   const todayIdx = (new Date().getDay() + 6) % 7; // Google starts week on Monday
   const todayHours = place.weekdayDescriptions[todayIdx] ?? null;
 
@@ -84,7 +86,7 @@ export function PlaceInfoCard({ place }: { place: PlaceDetails }) {
               rel="noreferrer noopener"
               className="underline"
             >
-              View on Google Maps
+              {t('viewOnGoogleMaps')}
             </a>
           </li>
         ) : null}

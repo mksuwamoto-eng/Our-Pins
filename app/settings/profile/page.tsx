@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { AppShell } from '@/components/layout/AppShell';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { ProfileEditForm } from '@/components/settings/ProfileEditForm';
 
 export default async function EditProfilePage() {
+  const t = await getTranslations('settings');
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -27,7 +29,7 @@ export default async function EditProfilePage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-xl px-4 py-6 space-y-6">
-        <h1 className="font-serif text-2xl">Edit profile</h1>
+        <h1 className="font-serif text-2xl">{t('editProfile')}</h1>
         <ProfileEditForm
           userId={user.id}
           initial={{

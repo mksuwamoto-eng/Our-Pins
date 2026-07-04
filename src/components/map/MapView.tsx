@@ -209,7 +209,7 @@ export function MapView({ initialPins, categories }: Props) {
         onClick={() => router.push('/pins/new')}
         aria-label={t('addPin')}
         className="absolute bottom-6 right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--primary)] text-white shadow-lg"
-        title="Add a place not already on the map"
+        title={t('addPlaceTooltip')}
       >
         <Plus className="h-6 w-6" />
       </button>

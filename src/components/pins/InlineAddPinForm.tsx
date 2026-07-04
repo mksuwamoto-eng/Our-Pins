@@ -96,7 +96,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
           rows={4}
           maxLength={1000}
           required
-          placeholder="Why do you recommend this to a friend?"
+          placeholder={t('vouchPlaceholder')}
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
         />
       </div>
@@ -106,7 +106,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
         disabled={pending || !vouchNote.trim()}
         className="w-full rounded-lg bg-[var(--primary)] px-4 py-3 font-medium text-white disabled:opacity-60"
       >
-        {pending ? tCommon('loading') : `${t('save')} & vouch`}
+        {pending ? tCommon('loading') : t('saveAndVouch')}
       </button>
     </form>
   );

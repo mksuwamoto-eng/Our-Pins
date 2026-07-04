@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { AppShell } from '@/components/layout/AppShell';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await getTranslations('members');
   const supabase = await createSupabaseServerClient();
   const { data: member } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
   if (!member) notFound();
@@ -59,7 +61,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        <h2 className="mt-6 font-serif text-xl">Pins</h2>
+        <h2 className="mt-6 font-serif text-xl">{t('pinsHeading')}</h2>
         {pins && pins.length > 0 ? (
           <ul className="mt-2 space-y-2">
             {pins.map((p) => (
@@ -71,7 +73,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
           </ul>
         ) : (
           <p className="mt-2 text-sm text-[var(--muted)]">
-            {member.display_name} hasn&apos;t pinned anything yet.
+            {t('noPinsYet', { name: member.display_name })}
           </p>
         )}
       </div>

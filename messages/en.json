@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Our Pins",
-    "tagline": "Our community map of Japan"
+    "tagline": "Our community map of Japan",
+    "files": "Files",
+    "filesTooltip": "Open shared Google Drive (members can upload)"
   },
   "auth": {
     "signInTitle": "Welcome back",
@@ -43,7 +45,8 @@
     "filters": "Filters",
     "list": "List",
     "newPinToast": "{name} added a pin",
-    "loadError": "The map couldn't load. Check your connection and refresh."
+    "loadError": "The map couldn't load. Check your connection and refresh.",
+    "addPlaceTooltip": "Add a place not already on the map"
   },
   "pin": {
     "vouchedBy": "Vouched by",
@@ -59,12 +62,32 @@
     "restore": "Restore",
     "former": "Former member",
     "placeErrorTitle": "Couldn't load this place",
-    "placeErrorBody": "Google didn't return details for this spot. Close the sheet and try again."
+    "placeErrorBody": "Google didn't return details for this spot. Close the sheet and try again.",
+    "edit": "Edit",
+    "editPin": "Edit pin",
+    "saveChanges": "Save changes",
+    "confirmDelete": "Confirm delete",
+    "pinned": "pinned",
+    "vouchedNoComment": "vouched, no comment",
+    "copied": "Copied",
+    "shareLink": "Copy share link",
+    "firstVouchPrompt": "Nobody from the community has vouched for this place yet.",
+    "beTheFirst": "Be the first.",
+    "fetchingPlace": "Fetching place from Google.",
+    "vouchPlaceholder": "Why do you recommend this to a friend?",
+    "saveAndVouch": "Save & vouch",
+    "viewOnGoogleMaps": "View on Google Maps",
+    "placeLabel": "Place (Google Places)",
+    "placeSearchPlaceholder": "Search a Japan place…",
+    "pickPlaceError": "Pick a place from the search results.",
+    "backToMap": "Back to map"
   },
   "members": {
     "title": "Members",
     "pinsCount": "{count, plural, one {# pin} other {# pins}}",
-    "vouchesCount": "{count, plural, one {# vouch} other {# vouches}}"
+    "vouchesCount": "{count, plural, one {# vouch} other {# vouches}}",
+    "pinsHeading": "Pins",
+    "noPinsYet": "{name} hasn't pinned anything yet."
   },
   "activity": {
     "title": "Activity",
@@ -82,7 +105,13 @@
     "themeSystem": "System",
     "danger": "Danger zone",
     "deleteAccount": "Delete account",
-    "deleteAccountConfirm": "Are you sure you want to delete your account? This can't be undone."
+    "deleteAccountConfirm": "Are you sure you want to delete your account? This can't be undone.",
+    "deleteAccountExplainer": "Your pins and vouches will be retained but anonymised. Your private profile data will be erased.",
+    "editProfile": "Edit profile",
+    "editProfileHelp": "Update your display name, photo, Instagram, or website.",
+    "saved": "Saved.",
+    "saving": "Saving…",
+    "saveFailed": "Save failed"
   },
   "admin": {
     "title": "Admin",
@@ -101,6 +130,7 @@
     "cancel": "Cancel",
     "loading": "Loading…",
     "error": "Something went wrong",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close"
   }
 }

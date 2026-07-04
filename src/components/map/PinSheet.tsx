@@ -37,6 +37,7 @@ export function PinSheet({
   onPinDeleted,
   onPinUpdated,
 }: Props) {
+  const tCommon = useTranslations('common');
   const open = selection !== null;
   return (
     <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -45,7 +46,7 @@ export function PinSheet({
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
           {selection?.kind === 'pin' ? <ShareButton pinId={selection.pin.id} /> : null}
           <Drawer.Close
-            aria-label="Close"
+            aria-label={tCommon('close')}
             className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--foreground)]"
           >
             <X className="h-5 w-5" />
@@ -236,7 +237,7 @@ function ExistingPinView({
   if (editing) {
     return (
       <>
-        <Drawer.Title className="font-serif text-2xl">Edit pin</Drawer.Title>
+        <Drawer.Title className="font-serif text-2xl">{t('editPin')}</Drawer.Title>
         <p className="mt-1 text-sm text-[var(--muted)]">{pin.name}</p>
         <div className="mt-4">
           <PinEditForm
@@ -264,11 +265,11 @@ function ExistingPinView({
         {canEdit ? (
           <button
             onClick={() => setEditing(true)}
-            aria-label="Edit pin"
+            aria-label={t('editPin')}
             className="flex shrink-0 items-center gap-1 rounded-full border border-[var(--border)] px-2 py-1 text-xs"
           >
             <Pencil className="h-3 w-3" />
-            Edit
+            {t('edit')}
           </button>
         ) : null}
       </div>
@@ -320,9 +321,9 @@ function ExistingPinView({
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium">
                   <Link href={`/members/${pin.created_by}`} className="text-inherit hover:underline">
-                    {labelFor(vouchers.get(pin.created_by))}
+                    {labelFor(vouchers.get(pin.created_by)) ?? t('former')}
                   </Link>{' '}
-                  <span className="text-xs font-normal text-[var(--muted)]">— pinned</span>
+                  <span className="text-xs font-normal text-[var(--muted)]">— {t('pinned')}</span>
                 </span>
                 <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
               </div>
@@ -356,7 +357,7 @@ function ExistingPinView({
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-sm font-medium">
                       <Link href={`/members/${v.voucher_id}`} className="text-inherit hover:underline">
-                        {labelFor(p)}
+                        {labelFor(p) ?? t('former')}
                       </Link>
                     </span>
                     <time className="text-xs text-[var(--muted)]">
@@ -367,7 +368,7 @@ function ExistingPinView({
                     <p className="mt-1 text-sm">{v.comment}</p>
                   ) : (
                     <p className="mt-1 text-xs italic text-[var(--muted)]">
-                      vouched, no comment
+                      {t('vouchedNoComment')}
                     </p>
                   )}
                 </div>
@@ -382,12 +383,12 @@ function ExistingPinView({
   );
 }
 
-function labelFor(p: Profile | undefined): string {
-  if (!p) return 'Former member';
-  return p.display_name;
+function labelFor(p: Profile | undefined): string | null {
+  return p ? p.display_name : null;
 }
 
 function ShareButton({ pinId }: { pinId: string }) {
+  const t = useTranslations('pin');
   const [copied, setCopied] = useState(false);
   async function handleShare() {
     if (typeof window === 'undefined') return;
@@ -404,13 +405,13 @@ function ShareButton({ pinId }: { pinId: string }) {
     <button
       type="button"
       onClick={handleShare}
-      aria-label="Copy share link"
+      aria-label={t('shareLink')}
       className="absolute right-14 top-3 z-10 flex h-8 items-center gap-1 rounded-full px-2 text-xs text-[var(--muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--foreground)]"
     >
       {copied ? (
         <>
           <Check className="h-4 w-4" />
-          <span className="pr-1">Copied</span>
+          <span className="pr-1">{t('copied')}</span>
         </>
       ) : (
         <Share2 className="h-4 w-4" />
@@ -429,6 +430,7 @@ function NewPlaceView({
   onSaved: (pin: Pin) => void;
 }) {
   const tPin = useTranslations('pin');
+  const tCommon = useTranslations('common');
   const [place, setPlace] = useState<PlaceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [existingPin, setExistingPin] = useState<Pin | null>(null);
@@ -461,8 +463,8 @@ function NewPlaceView({
   if (loading) {
     return (
       <>
-        <Drawer.Title className="font-serif text-xl">Loading…</Drawer.Title>
-        <p className="mt-4 text-sm text-[var(--muted)]">Fetching place from Google.</p>
+        <Drawer.Title className="font-serif text-xl">{tCommon('loading')}</Drawer.Title>
+        <p className="mt-4 text-sm text-[var(--muted)]">{tPin('fetchingPlace')}</p>
       </>
     );
   }
@@ -491,8 +493,7 @@ function NewPlaceView({
       </div>
       <div className="mt-6 border-t border-[var(--border)] pt-4">
         <p className="text-sm">
-          Nobody from the community has vouched for this place yet.{' '}
-          <strong>Be the first.</strong>
+          {tPin('firstVouchPrompt')} <strong>{tPin('beTheFirst')}</strong>
         </p>
         <InlineAddPinForm place={place} categories={categories} onSaved={onSaved} />
       </div>
