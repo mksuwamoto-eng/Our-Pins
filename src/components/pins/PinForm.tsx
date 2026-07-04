@@ -63,7 +63,7 @@ export function PinForm({ categories }: { categories: Category[] }) {
   async function onSubmit(values: FormValues) {
     setSubmitError(null);
     if (!place) {
-      setSubmitError('Pick a place from the search results.');
+      setSubmitError(t('pickPlaceError'));
       return;
     }
     const res = await fetch('/api/pins', {
@@ -84,10 +84,10 @@ export function PinForm({ categories }: { categories: Category[] }) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-1">
-        <label className="block text-sm font-medium">Place (Google Places)</label>
+        <label className="block text-sm font-medium">{t('placeLabel')}</label>
         <input
           ref={inputRef}
-          placeholder="Search a Japan place…"
+          placeholder={t('placeSearchPlaceholder')}
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
         />
         {place ? (

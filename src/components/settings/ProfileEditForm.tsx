@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AvatarUploader } from '@/components/onboarding/AvatarUploader';
 
 interface Props {
@@ -16,6 +17,9 @@ interface Props {
 }
 
 export function ProfileEditForm({ userId, initial }: Props) {
+  const t = useTranslations('onboarding');
+  const tSettings = useTranslations('settings');
+  const tPin = useTranslations('pin');
   const router = useRouter();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [instagram, setInstagram] = useState(initial.instagram);
@@ -43,7 +47,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
     setBusy(false);
     if (!res.ok) {
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(json.error ?? 'Save failed');
+      setError(json.error ?? tSettings('saveFailed'));
       return;
     }
     setSaved(true);
@@ -53,7 +57,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-1">
-        <span className="block text-sm font-medium">Profile photo</span>
+        <span className="block text-sm font-medium">{t('avatar')}</span>
         <AvatarUploader
           userId={userId}
           initialUrl={initial.avatarUrl}
@@ -62,7 +66,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
       </div>
 
       <div className="space-y-1">
-        <label className="block text-sm font-medium">Display name</label>
+        <label className="block text-sm font-medium">{t('displayName')}</label>
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
@@ -75,7 +79,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
-          <label className="block text-sm font-medium">Instagram</label>
+          <label className="block text-sm font-medium">{t('instagram')}</label>
           <input
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}
@@ -84,7 +88,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
           />
         </div>
         <div className="space-y-1">
-          <label className="block text-sm font-medium">Website</label>
+          <label className="block text-sm font-medium">{t('website')}</label>
           <input
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
@@ -95,14 +99,14 @@ export function ProfileEditForm({ userId, initial }: Props) {
       </div>
 
       {error ? <p className="text-sm text-[var(--color-terracotta-500)]">{error}</p> : null}
-      {saved ? <p className="text-sm text-green-700">Saved.</p> : null}
+      {saved ? <p className="text-sm text-green-700">{tSettings('saved')}</p> : null}
 
       <button
         type="submit"
         disabled={busy}
         className="rounded-lg bg-[var(--primary)] px-4 py-3 font-medium text-white disabled:opacity-60"
       >
-        {busy ? 'Saving…' : 'Save changes'}
+        {busy ? tSettings('saving') : tPin('saveChanges')}
       </button>
     </form>
   );

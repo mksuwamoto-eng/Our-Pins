@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Category, Pin } from '@/lib/supabase/types';
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: Props) {
+  const t = useTranslations('pin');
+  const tCommon = useTranslations('common');
   const [categoryId, setCategoryId] = useState(pin.category_id);
   const [vouchNote, setVouchNote] = useState(pin.vouch_note);
   const [busy, setBusy] = useState(false);
@@ -54,7 +57,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
   return (
     <form onSubmit={save} className="space-y-3">
       <div>
-        <label className="mb-1 block text-sm font-medium">Category</label>
+        <label className="mb-1 block text-sm font-medium">{t('category')}</label>
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
@@ -68,7 +71,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Why I vouch</label>
+        <label className="mb-1 block text-sm font-medium">{t('vouchNote')}</label>
         <textarea
           value={vouchNote}
           onChange={(e) => setVouchNote(e.target.value)}
@@ -87,7 +90,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
           disabled={busy || !vouchNote.trim()}
           className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
-          {busy ? '…' : 'Save changes'}
+          {busy ? '…' : t('saveChanges')}
         </button>
         <button
           type="button"
@@ -95,7 +98,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
           disabled={busy}
           className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
         >
-          Cancel
+          {tCommon('cancel')}
         </button>
         {confirmDelete ? (
           <button
@@ -104,7 +107,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
             disabled={busy}
             className="ml-auto rounded-lg bg-[var(--color-terracotta-500)] px-4 py-2 text-sm font-medium text-white"
           >
-            Confirm delete
+            {t('confirmDelete')}
           </button>
         ) : (
           <button
@@ -113,7 +116,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
             disabled={busy}
             className="ml-auto rounded-lg border border-[var(--color-terracotta-500)] px-4 py-2 text-sm text-[var(--color-terracotta-500)]"
           >
-            Delete pin
+            {t('delete')}
           </button>
         )}
       </div>

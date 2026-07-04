@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { AppShell } from '@/components/layout/AppShell';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function PinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await getTranslations('pin');
   const supabase = await createSupabaseServerClient();
   const { data: pin } = await supabase.from('pins').select('*').eq('id', id).maybeSingle();
   if (!pin) notFound();
@@ -17,7 +19,7 @@ export default async function PinDetailPage({ params }: { params: Promise<{ id: 
     <AppShell>
       <article className="mx-auto max-w-2xl px-4 py-6">
         <Link href="/" className="text-sm text-[var(--muted)]">
-          ← Back to map
+          ← {t('backToMap')}
         </Link>
         <h1 className="mt-2 font-serif text-3xl">{pin.name}</h1>
         {category ? (
@@ -30,13 +32,13 @@ export default async function PinDetailPage({ params }: { params: Promise<{ id: 
 
         <VouchPanel pinId={pin.id} />
 
-        <h2 className="mt-8 font-serif text-xl">Vouched by</h2>
+        <h2 className="mt-8 font-serif text-xl">{t('vouchedBy')}</h2>
         <ul className="mt-2 flex flex-wrap gap-2">
           {(vouches ?? []).map((v) => {
             const p = (v as unknown as { voucher: { display_name: string; display_pref: string } | null }).voucher;
             return (
               <li key={v.id} className="rounded-full bg-[var(--surface-subtle)] px-3 py-1 text-sm">
-                {p?.display_name ?? 'Former member'}
+                {p?.display_name ?? t('former')}
               </li>
             );
           })}

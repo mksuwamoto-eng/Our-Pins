@@ -12,10 +12,8 @@ export default async function SettingsPage() {
       <div className="mx-auto max-w-xl px-4 py-6 space-y-6">
         <h1 className="font-serif text-2xl">{t('title')}</h1>
         <Link href="/settings/profile" className="card block p-4 hover:bg-[var(--surface-subtle)]">
-          <h2 className="font-medium">Edit profile</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            Update your display name, photo, Instagram, or website.
-          </p>
+          <h2 className="font-medium">{t('editProfile')}</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">{t('editProfileHelp')}</p>
         </Link>
         <SignOutButton label={tAuth('signOut')} />
         <div className="card p-4">

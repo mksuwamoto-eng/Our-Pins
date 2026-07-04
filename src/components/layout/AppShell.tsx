@@ -9,6 +9,8 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const t = await getTranslations('app');
   const tAdmin = await getTranslations('admin');
   const tSettings = await getTranslations('settings');
+  const tActivity = await getTranslations('activity');
+  const tMembers = await getTranslations('members');
 
   const supabase = await createSupabaseServerClient();
   const { data: sess } = await supabase.auth.getSession();
@@ -35,15 +37,15 @@ export async function AppShell({ children }: { children: ReactNode }) {
           {t('name')}
         </Link>
         <nav className="flex items-center gap-3 text-sm">
-          <Link href="/activity">Activity</Link>
-          <Link href="/members">Members</Link>
+          <Link href="/activity">{tActivity('title')}</Link>
+          <Link href="/members">{tMembers('title')}</Link>
           <a
             href="https://drive.google.com/drive/folders/1nLGcaYZOwoO-2tFYKllJqBsfa4pzCTvy?usp=sharing"
             target="_blank"
             rel="noopener noreferrer"
-            title="Open shared Google Drive (members can upload)"
+            title={t('filesTooltip')}
           >
-            Files <span aria-hidden="true">↗</span>
+            {t('files')} <span aria-hidden="true">↗</span>
           </a>
           {userRole === 'admin' ? <Link href="/admin/members">{tAdmin('title')}</Link> : null}
           <Link href="/settings">{tSettings('title')}</Link>

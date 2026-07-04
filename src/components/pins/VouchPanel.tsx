@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 
 export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () => void }) {
   const t = useTranslations('pin');
+  const tCommon = useTranslations('common');
   const [vouched, setVouched] = useState(false);
   const [comment, setComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
@@ -114,7 +115,7 @@ export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () =
             onClick={() => setShowCommentInput(false)}
             className="rounded-full border border-[var(--border)] px-4 py-2 text-sm"
           >
-            Cancel
+            {tCommon('cancel')}
           </button>
           {error ? <span className="text-xs text-[var(--color-terracotta-500)]">{error}</span> : null}
         </div>
