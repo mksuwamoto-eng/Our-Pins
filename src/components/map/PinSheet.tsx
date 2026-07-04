@@ -10,6 +10,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { useRealtimeVouches } from '@/lib/supabase/realtime';
 import type { Category, Pin, Vouch, Profile } from '@/lib/supabase/types';
 import { relativeTime } from '@/lib/time';
+import { LocalizedText } from '@/components/i18n/LocalizedText';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { InlineAddPinForm } from '@/components/pins/InlineAddPinForm';
 import { PinEditForm } from '@/components/pins/PinEditForm';
@@ -327,7 +328,11 @@ function ExistingPinView({
                 </span>
                 <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm">{pin.vouch_note}</p>
+              <LocalizedText
+                original={pin.vouch_note}
+                translations={pin.translations}
+                className="mt-1 whitespace-pre-wrap text-sm"
+              />
             </div>
           </div>
         </div>
@@ -365,7 +370,11 @@ function ExistingPinView({
                     </time>
                   </div>
                   {v.comment ? (
-                    <p className="mt-1 text-sm">{v.comment}</p>
+                    <LocalizedText
+                      original={v.comment}
+                      translations={v.translations}
+                      className="mt-1 text-sm"
+                    />
                   ) : (
                     <p className="mt-1 text-xs italic text-[var(--muted)]">
                       {t('vouchedNoComment')}

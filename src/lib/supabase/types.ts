@@ -7,6 +7,9 @@ export type Json = string | number | boolean | null | { [k: string]: Json } | Js
 export type DisplayPref = 'avatar_only' | 'avatar_name';
 export type Role = 'member' | 'admin';
 
+/** EL+EN versions of member-written text; null = not translated yet. */
+export type Translations = { el?: string; en?: string } | null;
+
 export interface Profile {
   id: string;
   display_name: string;
@@ -55,6 +58,7 @@ export interface Pin {
   address_components: Json | null;
   category_id: string;
   vouch_note: string;
+  translations: Translations;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
@@ -74,6 +78,7 @@ export interface Vouch {
   pin_id: string;
   voucher_id: string;
   comment: string | null;
+  translations: Translations;
   created_at: string;
   updated_at: string;
 }

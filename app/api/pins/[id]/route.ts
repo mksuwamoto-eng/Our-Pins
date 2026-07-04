@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { translatePinNote } from '@/lib/i18n/translate';
 import { pinUpdateSchema } from '@/lib/schemas/pin';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,9 +23,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   // RLS handles permissions: pins_update_owner allows creator, pins_update_admin allows admins.
   // maybeSingle: an RLS-filtered update returns 0 rows, which should be a 404,
   // not the 500 that .single() turns it into.
+  // An edited note invalidates the stored translation until after() refreshes it.
+  const patch = parsed.data.vouch_note !== undefined
+    ? { ...parsed.data, translations: null }
+    : parsed.data;
   const { data, error } = await supabase
     .from('pins')
-    .update(parsed.data)
+    .update(patch)
     .eq('id', id)
     .select()
     .maybeSingle();
@@ -34,6 +39,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
   if (!data) return new NextResponse('not found or not allowed', { status: 404 });
+  if (parsed.data.vouch_note !== undefined) {
+    after(() => translatePinNote(id, data.vouch_note));
+  }
   return NextResponse.json(data);
 }
 

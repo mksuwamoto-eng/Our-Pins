@@ -80,7 +80,9 @@
     "placeLabel": "Μέρος (Google Places)",
     "placeSearchPlaceholder": "Αναζήτησε ένα μέρος στην Ιαπωνία…",
     "pickPlaceError": "Διάλεξε ένα μέρος από τα αποτελέσματα της αναζήτησης.",
-    "backToMap": "Πίσω στον χάρτη"
+    "backToMap": "Πίσω στον χάρτη",
+    "translated": "μετάφραση",
+    "showTranslation": "δες τη μετάφραση"
   },
   "members": {
     "title": "Μέλη",

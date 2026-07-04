@@ -80,7 +80,9 @@
     "placeLabel": "Place (Google Places)",
     "placeSearchPlaceholder": "Search a Japan place…",
     "pickPlaceError": "Pick a place from the search results.",
-    "backToMap": "Back to map"
+    "backToMap": "Back to map",
+    "translated": "translated",
+    "showTranslation": "show translation"
   },
   "members": {
     "title": "Members",
