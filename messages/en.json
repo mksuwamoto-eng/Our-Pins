@@ -42,7 +42,8 @@
     "addPin": "Add pin",
     "filters": "Filters",
     "list": "List",
-    "newPinToast": "{name} added a pin"
+    "newPinToast": "{name} added a pin",
+    "loadError": "The map couldn't load. Check your connection and refresh."
   },
   "pin": {
     "vouchedBy": "Vouched by",
@@ -56,7 +57,9 @@
     "delete": "Delete pin",
     "archive": "Archive",
     "restore": "Restore",
-    "former": "Former member"
+    "former": "Former member",
+    "placeErrorTitle": "Couldn't load this place",
+    "placeErrorBody": "Google didn't return details for this spot. Close the sheet and try again."
   },
   "members": {
     "title": "Members",

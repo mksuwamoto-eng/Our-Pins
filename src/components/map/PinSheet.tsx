@@ -207,12 +207,13 @@ function ExistingPinView({
         if (!ids.length) return;
         const { data: profs } = await supabase.from('profiles').select('*').in('id', ids);
         if (cancelled || !profs) return;
+        const profiles = profs as Profile[];
         const map = new Map<string, Profile>();
-        for (const p of profs) map.set(p.id, p as Profile);
+        for (const p of profiles) map.set(p.id, p);
         setVouchers(map);
 
-        const paths = profs
-          .map((p) => (p as Profile).avatar_path)
+        const paths = profiles
+          .map((p) => p.avatar_path)
           .filter((p): p is string => typeof p === 'string' && !p.includes('_pending'));
         if (!paths.length) return;
         const { data: signed } = await supabase.storage
@@ -427,6 +428,7 @@ function NewPlaceView({
   categories: Category[];
   onSaved: (pin: Pin) => void;
 }) {
+  const tPin = useTranslations('pin');
   const [place, setPlace] = useState<PlaceDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [existingPin, setExistingPin] = useState<Pin | null>(null);
@@ -456,7 +458,7 @@ function NewPlaceView({
     };
   }, [placeId]);
 
-  if (loading || !place) {
+  if (loading) {
     return (
       <>
         <Drawer.Title className="font-serif text-xl">Loading…</Drawer.Title>
@@ -467,6 +469,17 @@ function NewPlaceView({
 
   if (existingPin) {
     return <ExistingPinView pin={existingPin} categories={categories} />;
+  }
+
+  // fetchPlaceDetails resolved null — Google lookup failed. Without this
+  // branch the sheet shows "Loading…" forever.
+  if (!place) {
+    return (
+      <>
+        <Drawer.Title className="font-serif text-xl">{tPin('placeErrorTitle')}</Drawer.Title>
+        <p className="mt-4 text-sm text-[var(--muted)]">{tPin('placeErrorBody')}</p>
+      </>
+    );
   }
 
   return (

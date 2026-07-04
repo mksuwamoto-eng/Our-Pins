@@ -20,14 +20,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   // RLS handles permissions: pins_update_owner allows creator, pins_update_admin allows admins.
+  // maybeSingle: an RLS-filtered update returns 0 rows, which should be a 404,
+  // not the 500 that .single() turns it into.
   const { data, error } = await supabase
     .from('pins')
     .update(parsed.data)
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('pin update failed:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
   if (!data) return new NextResponse('not found or not allowed', { status: 404 });
   return NextResponse.json(data);
 }
@@ -50,9 +55,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     .update({ archived_at: new Date().toISOString() })
     .eq('id', id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('pin archive failed:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
   if (!data) return new NextResponse('not found or not allowed', { status: 404 });
   return NextResponse.json({ ok: true });
 }

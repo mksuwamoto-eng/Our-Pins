@@ -1,6 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { useEffect } from 'react';
 import { getSupabaseBrowserClient } from './browser';
 import type { Pin, Vouch } from './types';
@@ -16,7 +17,7 @@ export function useRealtimePins(onNewPin?: (pin: Pin) => void) {
     const supabase = getSupabaseBrowserClient();
     const channel = supabase
       .channel('pins-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pins' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pins' }, (payload: RealtimePostgresChangesPayload<Pin>) => {
         const pin = payload.new as Pin;
         if (pin.archived_at) return;
         queryClient.setQueryData<Pin[]>(['pins'], (old) =>
@@ -24,7 +25,7 @@ export function useRealtimePins(onNewPin?: (pin: Pin) => void) {
         );
         onNewPin?.(pin);
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pins' }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pins' }, (payload: RealtimePostgresChangesPayload<Pin>) => {
         const updated = payload.new as Pin;
         queryClient.setQueryData<Pin[]>(['pins'], (old) =>
           old
@@ -34,7 +35,7 @@ export function useRealtimePins(onNewPin?: (pin: Pin) => void) {
             : old,
         );
       })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pins' }, (payload) => {
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pins' }, (payload: RealtimePostgresChangesPayload<Pin>) => {
         const id = (payload.old as { id: string }).id;
         queryClient.setQueryData<Pin[]>(['pins'], (old) => old?.filter((p) => p.id !== id) ?? []);
       })
@@ -60,7 +61,7 @@ export function useRealtimeVouches(pinId: string | null) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'vouches', filter: `pin_id=eq.${pinId}` },
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<Vouch>) => {
           const key = ['vouches', pinId];
           queryClient.setQueryData<Vouch[]>(key, (old) => {
             const list = old ?? [];

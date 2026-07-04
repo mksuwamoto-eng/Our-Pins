@@ -34,6 +34,7 @@ export function MapView({ initialPins, categories }: Props) {
   // URL (?pin=<id>) so they survive reloads and can be shared/back-buttoned.
   const [placeSelection, setPlaceSelection] = useState<SheetSelection>(null);
   const [tilesLoaded, setTilesLoaded] = useState(false);
+  const [mapLoadFailed, setMapLoadFailed] = useState(false);
   const searchParams = useSearchParams();
   const pinIdFromUrl = searchParams.get('pin');
 
@@ -123,6 +124,10 @@ export function MapView({ initialPins, categories }: Props) {
         }
       });
       setMap(m);
+    }).catch(() => {
+      // Maps JS failed to load (network, key restriction) — without this the
+      // map area shows the loading overlay forever.
+      if (active) setMapLoadFailed(true);
     });
     return () => {
       active = false;
@@ -193,10 +198,10 @@ export function MapView({ initialPins, categories }: Props) {
       <div ref={containerRef} className="absolute inset-0" />
       {!tilesLoaded ? (
         <div
-          aria-hidden
+          role="status"
           className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[var(--surface)] text-sm text-[var(--muted)]"
         >
-          {tCommon('loading')}
+          {mapLoadFailed ? t('loadError') : tCommon('loading')}
         </div>
       ) : null}
       <FilterBar categories={categories} />

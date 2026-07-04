@@ -34,11 +34,18 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!photoId) return new NextResponse('photoId required', { status: 400 });
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('pin_photos')
     .delete()
     .eq('pin_id', id)
-    .eq('id', photoId);
-  if (error) return new NextResponse(error.message, { status: 500 });
+    .eq('id', photoId)
+    .select('id');
+  if (error) {
+    console.error('pin photo delete failed:', error);
+    return new NextResponse('server error', { status: 500 });
+  }
+  // RLS silently filters rows the caller may not delete — surface that as 404
+  // instead of a false { ok: true }.
+  if (!data?.length) return new NextResponse('not found or not allowed', { status: 404 });
   return NextResponse.json({ ok: true });
 }

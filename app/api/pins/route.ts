@@ -33,6 +33,16 @@ export async function POST(req: Request) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    // Unique violation on google_place_id: someone pinned this place first.
+    if (error.code === '23505') {
+      return NextResponse.json(
+        { error: 'This place has already been pinned by the community.' },
+        { status: 409 },
+      );
+    }
+    console.error('pin insert failed:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
   return NextResponse.json(data);
 }
