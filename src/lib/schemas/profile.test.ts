@@ -17,15 +17,24 @@ describe('onboardingSchema', () => {
     expect(onboardingSchema.safeParse({ ...valid, acceptedGuidelines: false }).success).toBe(false);
   });
 
-  it('rejects an http (non-https) website', () => {
+  it('prepends https:// to a bare website and keeps an explicit scheme', () => {
+    const bare = onboardingSchema.safeParse({ ...valid, website: 'example.com' });
+    expect(bare.success).toBe(true);
+    if (bare.success) expect(bare.data.website).toBe('https://example.com');
     expect(
       onboardingSchema.safeParse({ ...valid, website: 'http://example.com' }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('rejects an instagram handle with spaces', () => {
     expect(
       onboardingSchema.safeParse({ ...valid, instagram: 'has space' }).success,
     ).toBe(false);
+  });
+
+  it('strips a leading @ from an instagram handle', () => {
+    const parsed = onboardingSchema.safeParse({ ...valid, instagram: '@mako.jp' });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.instagram).toBe('mako.jp');
   });
 });

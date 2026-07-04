@@ -21,7 +21,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       { onConflict: 'pin_id,voucher_id' },
     );
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+  if (error) {
+    console.error('vouch upsert failed:', error);
+    return new NextResponse('server error', { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -39,6 +42,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     .eq('pin_id', id)
     .eq('voucher_id', user.id);
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+  if (error) {
+    console.error('vouch delete failed:', error);
+    return new NextResponse('server error', { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

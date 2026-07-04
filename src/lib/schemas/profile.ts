@@ -14,8 +14,12 @@ export const onboardingSchema = z.object({
   instagram: z
     .string()
     .trim()
-    .max(30, 'Instagram handle is at most 30 characters')
     .transform((v) => v.replace(/^@/, ''))
+    // Must match the DB CHECK constraint on profiles.instagram exactly,
+    // or the save fails with a raw 500 after passing app validation.
+    .refine((v) => /^[a-zA-Z0-9._]{1,30}$/.test(v), {
+      message: 'Instagram handles use letters, numbers, dots and underscores (max 30)',
+    })
     .optional()
     .or(z.literal('').transform(() => undefined)),
   website: z
