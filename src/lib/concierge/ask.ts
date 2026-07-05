@@ -3,11 +3,13 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import { buildCorpus } from '@/lib/concierge/corpus';
 import { getServerEnv } from '@/lib/env';
 
-const MODEL = 'claude-opus-4-8';
-// USD per million tokens for claude-opus-4-8.
-const RATE = { input: 5, cacheWrite: 6.25, cacheRead: 0.5, output: 25 };
+const MODEL = 'claude-sonnet-5';
+// USD per million tokens for claude-sonnet-5 (sticker prices; an intro
+// discount runs through 2026-08-31, so the guard overcounts until then —
+// the safe direction).
+const RATE = { input: 3, cacheWrite: 3.75, cacheRead: 0.3, output: 15 };
 const DAILY_QUERIES_PER_USER = 20;
-const DEFAULT_MONTHLY_BUDGET_USD = 10;
+const DEFAULT_MONTHLY_BUDGET_USD = 5;
 
 const SYSTEM_INSTRUCTIONS = `You are Parea (Παρέα), the concierge of "Our Pins" — a private map where a community of Greeks living in Japan vouch for places they love.
 
