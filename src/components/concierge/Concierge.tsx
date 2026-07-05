@@ -5,13 +5,12 @@ import Link from 'next/link';
 import { useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { MapPin, MessageCircle, Send, X } from 'lucide-react';
+import { PIN_MARKER } from '@/lib/concierge/markers';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
 }
-
-const PIN_MARKER = /\[\[pin:([0-9a-fA-F-]{36})\|([^\]]+)\]\]/g;
 
 /**
  * Render an answer, turning [[pin:<id>|<name>]] markers into map deep-links.

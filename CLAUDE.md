@@ -94,32 +94,65 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 - ✅ GOJ logo wired into header, sign-in page, and PWA manifest
   (requires `public/icons/goj-logo.png` to exist — if Mako forgot to
   copy it, you'll see broken image icons).
-
----
-
-## Built but NOT yet live (July 2026 session — needs Mako's action)
-
-A large session added, in four commits on main (audit fixes, i18n sweep,
-Parea Concierge, language bridge):
-
-- **Parea Concierge** — chat FAB (bottom-left of the map) →
+- ✅ Sign-in via **LINE Login** (verified by Mako July 5, 2026: invite
+  link → LINE sign-in → onboarding). Email permission from LINE still
+  pending approval — until granted, LINE returns no email and new LINE
+  users get synthetic emails (`line.<sub>@line.our-pins.local`), so
+  existing Google/magic accounts don't auto-link.
+- ✅ **Parea Concierge** — chat FAB (bottom-left of the map) →
   `/api/concierge` answers questions from the community's pins/vouches
   only, via Claude (`claude-opus-4-8`), citing members by name;
   `[[pin:id|name]]` markers render as deep-links. Full-corpus prompt
   (no vector store — deliberate at this scale) with prompt caching.
   Spend caps: `concierge_queries` log table, default $10/month
-  (`CONCIERGE_MONTHLY_BUDGET_USD`) + 20 queries/user/day.
-- **Language bridge** — pin notes + vouch comments auto-translated
+  (`CONCIERGE_MONTHLY_BUDGET_USD`) + 20 queries/user/day. Migrations
+  0013/0014 applied; `ANTHROPIC_API_KEY` set (per Mako, July 5, 2026).
+- ✅ **Language bridge** — pin notes + vouch comments auto-translated
   EL↔EN on write (via `next/server after()`), stored in
   `translations jsonb`; PinSheet shows the reader's language with a
   "translated" toggle. No backfill of old rows yet.
 
+---
+
+## Built but NOT yet live: LINE bot "Parea" (July 5, 2026 session)
+
+The Concierge is reachable from LINE — the "LINE bridge" from the
+vision deck (Horizon 2). `app/api/line/webhook/route.ts` receives
+LINE Messaging API webhooks (signature-verified, ACKs immediately,
+answers in `after()` via reply tokens — free, 1-min TTL):
+
+- **Group chat**: answers only in the group whose id matches
+  `LINE_GROUP_ID`, and only when @mentioned or the text starts with
+  a literal `@parea`/`@παρέα`. Bare "παρέα …" does NOT trigger (it's
+  an everyday Greek word). Group membership = trust boundary, so
+  members without app accounts may ask; they're rate-capped by LINE
+  userId (`concierge_queries.line_user_id`, migration 0015).
+- **1:1 chat**: active members only — LINE userId must map to
+  `private_profiles.line_sub` AND `profiles.is_member=true` (a
+  line_sub row alone is not membership: the login callback writes it
+  before invite consumption). Others get a "sign in first" reply.
+- Shared core: `src/lib/concierge/ask.ts` (`askParea`) — extracted
+  from the web route; both channels share the $10/month budget and
+  20/day caps, which now **fail closed** on guard-query errors.
+- Vouch-drafting from shared locations: deliberately NOT in v1
+  (replies "can't do that yet").
+
 **To go live, Mako must:**
-1. `pnpm db:push` — apply migrations 0013 + 0014 to the cloud DB
-   (Claude was blocked from pushing to prod).
-2. Add `ANTHROPIC_API_KEY` to `.env.local` AND Vercel env (until then
-   the Concierge returns a friendly 503 and translations are skipped).
-3. Push main to deploy. Then user-test both features.
+1. `pnpm db:push` — apply migration 0015 (classifier blocked Claude
+   again). Until applied, LINE queries fail closed (web unaffected).
+2. In LINE Developers console: create a **Messaging API channel under
+   the SAME provider as the LINE Login channel** (critical — userIds
+   are provider-scoped; a different provider breaks the line_sub
+   mapping permanently). Issue a channel access token; disable
+   auto-reply + greeting; enable "Allow bot to join group chats";
+   set webhook URL `https://our-pins.vercel.app/api/line/webhook`,
+   enable webhook.
+3. Set `LINE_MESSAGING_CHANNEL_SECRET`, `LINE_MESSAGING_ACCESS_TOKEN`
+   in `.env.local` + Vercel (webhook returns 503 until then).
+4. Add the bot to the Greeks-of-Japan LINE group; copy the groupId
+   from the `[line/webhook] joined group:` line in Vercel logs into
+   `LINE_GROUP_ID` (both envs); redeploy.
+5. Test: @mention in group + 1:1 DM from a linked member.
 
 ---
 
@@ -132,13 +165,10 @@ In rough priority:
    `app/api/pins/[id]/photos/route.ts`; the client-side uploader was
    deferred. Avatar upload (via `/api/profile/avatar` route + admin
    client) is the template to copy from.
-2. **LINE Login**. Code audited + fixed (July 2026): invite token now
-   rides in the OAuth state, session refreshes after invite consumption,
-   existing accounts get linked by email via `generateLink` lookup.
-   Only blocker: Mako must create the LINE Login channel in the LINE
-   Developers console and put real Channel ID + Secret in `.env.local`
-   and Vercel (current values are placeholders). Callback URL to
-   register: `https://our-pins.vercel.app/api/auth/line/callback`.
+2. **LINE bot go-live** — see "Built but NOT yet live" above (console
+   setup, env vars, migration 0015). LINE Login itself is DONE and
+   verified; only the email-permission approval is still pending (see
+   "What works in production").
 3. **Custom domain `ourpins.app`**. Owned (or planned to be); not
    attached to Vercel yet. When attached, update
    `NEXT_PUBLIC_SITE_URL`, Supabase Site URL, Google OAuth origins,
@@ -193,9 +223,12 @@ In `supabase/migrations/`:
   only `(display_name, avatar_path, display_pref, instagram, website)`.
   Verified via `information_schema.column_privileges`.
 - `0013` — Concierge query log (`concierge_queries`, RLS on with no
-  policies = service-role only). **NOT yet applied to cloud.**
+  policies = service-role only).
 - `0014` — `pins.translations` + `vouches.translations` jsonb for the
-  language bridge. **NOT yet applied to cloud.**
+  language bridge.
+- `0015` — `concierge_queries.user_id` nullable + `line_user_id` (LINE
+  bot asker logging/caps). **NOT yet applied to cloud** — LINE-keyed
+  queries fail closed until it is; web unaffected.
 
 ---
 

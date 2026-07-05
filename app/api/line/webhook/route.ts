@@ -1,0 +1,211 @@
+import { after, NextResponse } from 'next/server';
+import { askParea, type AskError } from '@/lib/concierge/ask';
+import { PIN_MARKER } from '@/lib/concierge/markers';
+import {
+  replyLineMessage,
+  verifyLineSignature,
+  type LineWebhookEvent,
+} from '@/lib/line/messaging';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
+import { getServerEnv, publicEnv } from '@/lib/env';
+
+// Model call can take a while; the reply token stays valid ~1 minute.
+export const maxDuration = 60;
+
+// In the group, only messages that address the bot get an answer: a real
+// @mention, or a typed "@parea …" prefix. A bare leading "παρέα" must NOT
+// trigger — it's an everyday Greek word ("Παρέα, ποιος έρχεται;" addresses
+// the group, not the bot).
+const TRIGGER_PREFIX = /^\s*@(parea|παρέα|παρεα)(?:$|[\s,:;!?.·—-]+)/i;
+
+const ERROR_REPLY: Record<AskError, string> = {
+  not_configured: 'Sorry, I am not fully set up yet. / Συγγνώμη, δεν είμαι έτοιμη ακόμα.',
+  invalid_question:
+    'That is a bit long for me — keep questions under 500 characters. / Λίγο μεγάλο για μένα — έως 500 χαρακτήρες.',
+  budget_exhausted:
+    'I have used up my budget for this month — ask me again next month! / Εξάντλησα το μηνιαίο μου όριο — τα ξαναλέμε του μήνα!',
+  daily_limit:
+    'You have reached today’s question limit — ask me again tomorrow! / Έφτασες το ημερήσιο όριο — ρώτα με ξανά αύριο!',
+  model_rate_limited: 'I am a bit overloaded — try again in a minute. / Λίγη υπερφόρτωση — δοκίμασε ξανά σε ένα λεπτό.',
+  model_error: 'Something went wrong on my end — try again later. / Κάτι πήγε στραβά — δοκίμασε ξανά αργότερα.',
+  model_refused: 'Something went wrong on my end — try again later. / Κάτι πήγε στραβά — δοκίμασε ξανά αργότερα.',
+};
+
+const NOT_LINKED_REPLY = `This chat is for Our Pins members. Sign in with LINE once at ${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in and then ask me anything! / Συνδέσου μία φορά με LINE στο ${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in και μετά ρώτα με ό,τι θες!`;
+
+const LOCATION_REPLY =
+  'I can’t turn shared locations into pins yet — add it on the map! / Δεν μπορώ να κάνω pin από τοποθεσία ακόμα — πρόσθεσέ το στον χάρτη!';
+
+/** Render [[pin:<id>|<name>]] markers as plain text with a map deep-link. */
+function markersToLinks(answer: string): string {
+  return answer.replace(
+    PIN_MARKER,
+    (_, id, name) => `${name} (${publicEnv.NEXT_PUBLIC_SITE_URL}/?pin=${id})`,
+  );
+}
+
+/**
+ * Resolve a LINE userId to an active member's Supabase user id. The line_sub
+ * row alone is NOT proof of membership: the LINE callback writes it before
+ * invite consumption, so strangers who merely attempted a LINE sign-in have
+ * one too.
+ */
+async function activeMemberIdForLineUser(lineUserId: string): Promise<string | null> {
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
+    .from('private_profiles')
+    .select('id, profiles!inner(is_member, archived_at)')
+    .eq('line_sub', lineUserId)
+    .maybeSingle();
+  const profile = data?.profiles as unknown as
+    | { is_member: boolean; archived_at: string | null }
+    | undefined;
+  return profile?.is_member && !profile.archived_at ? data!.id : null;
+}
+
+async function answerQuestion(input: {
+  question: string;
+  replyToken: string;
+  userId?: string;
+  lineUserId: string;
+  accessToken: string;
+}) {
+  const result = await askParea({
+    question: input.question,
+    userId: input.userId,
+    lineUserId: input.lineUserId,
+  });
+  const text = result.ok ? markersToLinks(result.answer) : ERROR_REPLY[result.error];
+  await replyLineMessage({
+    replyToken: input.replyToken,
+    text,
+    accessToken: input.accessToken,
+  });
+}
+
+/** Question addressed to the bot in the group, or undefined if not for us. */
+function groupQuestion(message: NonNullable<LineWebhookEvent['message']>): string | undefined {
+  const text = message.text!;
+  const selfMentions = (message.mention?.mentionees ?? []).filter((m) => m.isSelf);
+  if (selfMentions.length) {
+    // Strip every bot mention, back to front so indices stay valid.
+    return selfMentions
+      .sort((a, b) => b.index - a.index)
+      .reduce((t, m) => t.slice(0, m.index) + t.slice(m.index + m.length), text);
+  }
+  if (TRIGGER_PREFIX.test(text)) return text.replace(TRIGGER_PREFIX, '');
+  return undefined;
+}
+
+async function handleEvent(
+  event: LineWebhookEvent,
+  opts: { accessToken: string; groupId?: string },
+) {
+  // A redelivered event's reply token is already spent — answering would
+  // burn a second model call for a reply LINE will reject.
+  if (event.deliveryContext?.isRedelivery) return;
+
+  // Bot added to a group: surface the groupId in the logs so it can be
+  // copied into LINE_GROUP_ID.
+  if (event.type === 'join' && event.source?.type === 'group') {
+    console.log('[line/webhook] joined group:', event.source.groupId);
+    if (event.replyToken) {
+      await replyLineMessage({
+        replyToken: event.replyToken,
+        text: 'Γεια σας! I’m Parea — mention me with a question like "@Parea ramen in Kyoto?" and I’ll answer from the community’s pins.',
+        accessToken: opts.accessToken,
+      });
+    }
+    return;
+  }
+
+  if (event.type !== 'message' || !event.replyToken || !event.source) return;
+  const { source, message } = event;
+
+  if (source.type === 'user' && source.userId) {
+    // 1:1 chat: active members only, verified via the LINE-login mapping.
+    if (message?.type !== 'text' && message?.type !== 'location') return;
+    if (message.type === 'text' && !message.text?.trim()) return;
+    const userId = await activeMemberIdForLineUser(source.userId);
+    if (!userId) {
+      await replyLineMessage({
+        replyToken: event.replyToken,
+        text: NOT_LINKED_REPLY,
+        accessToken: opts.accessToken,
+      });
+      return;
+    }
+    if (message.type === 'location') {
+      await replyLineMessage({
+        replyToken: event.replyToken,
+        text: LOCATION_REPLY,
+        accessToken: opts.accessToken,
+      });
+      return;
+    }
+    await answerQuestion({
+      question: message.text!.trim(),
+      replyToken: event.replyToken,
+      userId,
+      lineUserId: source.userId,
+      accessToken: opts.accessToken,
+    });
+    return;
+  }
+
+  if (source.type === 'group') {
+    // Only the configured community group; membership there is the trust
+    // boundary, so unmapped members may ask too.
+    if (!opts.groupId || source.groupId !== opts.groupId) return;
+    if (message?.type !== 'text' || !message.text) return;
+    const question = groupQuestion(message)?.trim();
+    if (!question) return;
+    if (!source.userId) {
+      // LINE omits userId for members who haven't agreed to its OA terms;
+      // without it we can't rate-limit them, so we stay silent — but say why.
+      console.log('[line/webhook] group message without userId ignored');
+      return;
+    }
+    await answerQuestion({
+      question,
+      replyToken: event.replyToken,
+      userId: (await activeMemberIdForLineUser(source.userId)) ?? undefined,
+      lineUserId: source.userId,
+      accessToken: opts.accessToken,
+    });
+  }
+}
+
+export async function POST(req: Request) {
+  const env = getServerEnv();
+  if (!env.LINE_MESSAGING_CHANNEL_SECRET || !env.LINE_MESSAGING_ACCESS_TOKEN) {
+    return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  }
+
+  const rawBody = await req.text();
+  const ok = verifyLineSignature({
+    rawBody,
+    signature: req.headers.get('x-line-signature'),
+    channelSecret: env.LINE_MESSAGING_CHANNEL_SECRET,
+  });
+  if (!ok) return NextResponse.json({ error: 'bad_signature' }, { status: 401 });
+
+  const body = JSON.parse(rawBody) as { events?: LineWebhookEvent[] };
+  const events = body.events ?? [];
+  const opts = { accessToken: env.LINE_MESSAGING_ACCESS_TOKEN, groupId: env.LINE_GROUP_ID };
+
+  // ACK LINE immediately; answer within the reply token's TTL. Events run
+  // concurrently — two questions in one batch must not queue behind each
+  // other's model call.
+  after(async () => {
+    await Promise.all(
+      events.map((event) =>
+        handleEvent(event, opts).catch((err) =>
+          console.error('[line/webhook] event failed:', err),
+        ),
+      ),
+    );
+  });
+
+  return NextResponse.json({ ok: true });
+}

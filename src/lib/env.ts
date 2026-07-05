@@ -14,6 +14,13 @@ const serverSchema = publicSchema.extend({
   SUPABASE_JWT_SECRET: z.string().min(1),
   LINE_CHANNEL_ID: z.string().min(1),
   LINE_CHANNEL_SECRET: z.string().min(1),
+  // Optional: Messaging API channel (the Parea LINE bot). Separate channel —
+  // and separate secret — from the LINE Login channel above, but it must live
+  // under the same LINE provider so webhook userIds match line_sub.
+  LINE_MESSAGING_CHANNEL_SECRET: z.string().min(1).optional(),
+  LINE_MESSAGING_ACCESS_TOKEN: z.string().min(1).optional(),
+  // The one group the bot answers in; until set, group messages are ignored.
+  LINE_GROUP_ID: z.string().min(1).optional(),
   GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
   // Optional: the Parea Concierge returns 503 until this is set.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
