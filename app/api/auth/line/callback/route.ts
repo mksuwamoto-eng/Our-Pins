@@ -5,7 +5,7 @@ import {
   generateMagicLinkVerification,
   upsertUserFromLine,
 } from '@/lib/auth/session';
-import { consumeInviteCookie } from '@/lib/auth/accept-invite';
+import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
 import { publicEnv } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -27,7 +27,15 @@ export async function GET(req: NextRequest) {
     return redirectToSignIn('Invalid auth state. Please try again.');
   }
 
-  const next = decodeURIComponent(state.split('.')[1] ?? '/');
+  let next = '/';
+  let inviteToken: string | null = null;
+  try {
+    const payload = JSON.parse(Buffer.from(state.split('.')[1] ?? '', 'base64url').toString('utf8'));
+    if (typeof payload.next === 'string') next = payload.next;
+    if (typeof payload.invite === 'string') inviteToken = payload.invite;
+  } catch {
+    // fall through with defaults
+  }
   const redirectUri = `${publicEnv.NEXT_PUBLIC_SITE_URL}/api/auth/line/callback`;
 
   try {
@@ -49,16 +57,19 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // If an invite cookie is present, consume it now (sets is_member=true).
+    // Consume the invite (sets is_member=true), preferring the state-borne
+    // token, then refresh so the new JWT carries the is_member claim.
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await consumeInviteCookie(user.id);
+      const consumed = inviteToken ? await consumeInviteByToken(user.id, inviteToken) : null;
+      if (!consumed) await consumeInviteCookie(user.id);
+      await supabase.auth.refreshSession();
     }
 
     return NextResponse.redirect(`${publicEnv.NEXT_PUBLIC_SITE_URL}${next}`);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Sign-in failed';
-    return redirectToSignIn(message);
+    console.error('[line/callback]', err);
+    return redirectToSignIn('Sign-in failed');
   }
 }
 

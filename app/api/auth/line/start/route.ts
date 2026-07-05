@@ -9,7 +9,11 @@ const NONCE_COOKIE = 'our_pins_line_nonce';
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const next = url.searchParams.get('next') ?? '/';
-  const state = `${generateState()}.${encodeURIComponent(next)}`;
+  const invite = url.searchParams.get('invite');
+  // LINE requires the registered redirect_uri to match exactly, so next/invite
+  // ride inside the state instead of the callback URL (unlike the Google flow).
+  const payload = Buffer.from(JSON.stringify({ next, invite })).toString('base64url');
+  const state = `${generateState()}.${payload}`;
   const nonce = generateNonce();
 
   const cookieStore = await cookies();
