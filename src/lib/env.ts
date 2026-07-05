@@ -4,7 +4,9 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),
-  NEXT_PUBLIC_SITE_URL: z.string().url(),
+  // Trailing slash stripped: callers append `/path`, and LINE exact-matches
+  // the registered redirect_uri, so `https://host//path` would be rejected.
+  NEXT_PUBLIC_SITE_URL: z.string().url().transform((s) => s.replace(/\/+$/, '')),
 });
 
 const serverSchema = publicSchema.extend({
