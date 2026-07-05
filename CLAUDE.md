@@ -132,8 +132,13 @@ In rough priority:
    `app/api/pins/[id]/photos/route.ts`; the client-side uploader was
    deferred. Avatar upload (via `/api/profile/avatar` route + admin
    client) is the template to copy from.
-2. **LINE Login**. Channel ID + Secret needed in `.env.local` and
-   Vercel. Code is ready; sign-in button currently dead-ends.
+2. **LINE Login**. Code audited + fixed (July 2026): invite token now
+   rides in the OAuth state, session refreshes after invite consumption,
+   existing accounts get linked by email via `generateLink` lookup.
+   Only blocker: Mako must create the LINE Login channel in the LINE
+   Developers console and put real Channel ID + Secret in `.env.local`
+   and Vercel (current values are placeholders). Callback URL to
+   register: `https://our-pins.vercel.app/api/auth/line/callback`.
 3. **Custom domain `ourpins.app`**. Owned (or planned to be); not
    attached to Vercel yet. When attached, update
    `NEXT_PUBLIC_SITE_URL`, Supabase Site URL, Google OAuth origins,
