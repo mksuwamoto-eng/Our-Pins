@@ -16,7 +16,7 @@
  * the access_token_hook fires automatically (injecting is_member + role).
  */
 
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
 import { getServerEnv } from '../env';
 
 const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize';
@@ -87,10 +87,20 @@ export async function verifyLineIdToken(input: {
   expectedNonce?: string;
 }): Promise<LineProfile> {
   const env = getServerEnv();
-  const { payload } = await jwtVerify(input.idToken, jwks, {
-    issuer: LINE_ISSUER,
-    audience: env.LINE_CHANNEL_ID,
-  });
+  // LINE signs ID tokens with HS256 (channel secret as HMAC key) by default;
+  // the JWKS endpoint only serves asymmetric keys (ES256), so pick by header.
+  const { alg } = decodeProtectedHeader(input.idToken);
+  const { payload } =
+    alg === 'HS256'
+      ? await jwtVerify(input.idToken, new TextEncoder().encode(env.LINE_CHANNEL_SECRET), {
+          issuer: LINE_ISSUER,
+          audience: env.LINE_CHANNEL_ID,
+          algorithms: ['HS256'],
+        })
+      : await jwtVerify(input.idToken, jwks, {
+          issuer: LINE_ISSUER,
+          audience: env.LINE_CHANNEL_ID,
+        });
 
   if (input.expectedNonce && payload.nonce !== input.expectedNonce) {
     throw new Error('LINE ID token nonce mismatch');
