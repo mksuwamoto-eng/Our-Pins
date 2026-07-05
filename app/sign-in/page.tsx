@@ -72,10 +72,9 @@ export default async function SignInPage({
       </div>
 
       <p className="mt-6 text-center text-xs text-[var(--muted)]">
-        We use sign-in only to verify it&apos;s you. We never read your inbox or contacts. Your
-        email is visible only to community admins.{' '}
+        {t('privacyNote')}{' '}
         <a href="/privacy" className="underline">
-          Privacy policy
+          {t('privacyPolicy')}
         </a>
       </p>
     </main>

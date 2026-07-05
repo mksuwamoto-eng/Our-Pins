@@ -14,7 +14,9 @@
     "noInviteHeading": "You need an invite",
     "noInviteBody": "Our Pins is private and invite-only. Ask Mako or a community admin for an invite link.",
     "linkExpired": "Your sign-in link expired or was already used. Enter your email below to get a new one.",
-    "signInError": "Something went wrong signing you in. Try again with the form below."
+    "signInError": "Something went wrong signing you in. Try again with the form below.",
+    "privacyNote": "Sign-in is only used to confirm your identity. Your email address is visible to community admins only.",
+    "privacyPolicy": "Privacy policy"
   },
   "invite": {
     "acceptingTitle": "Activating your invite",

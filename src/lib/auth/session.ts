@@ -38,50 +38,34 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
 
   const email = line.email ?? syntheticEmail(line.sub);
 
-  // If LINE gave us an email that already has an account (e.g. a member who
-  // onboarded via Google/magic link), link line_sub to it instead of failing.
-  // generateLink is the documented way to resolve an auth user by email; it
-  // errors for unknown emails, in which case we fall through to createUser.
-  if (line.email) {
-    const { data: linked } = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: line.email,
+  // Resolve an existing auth user for this email — a member who onboarded via
+  // Google/magic link (when LINE shares the email), or an orphan from an
+  // earlier half-completed LINE sign-in. generateLink is the documented way
+  // to look up an auth user by email; it errors for unknown emails, in which
+  // case we create the user.
+  let userId: string;
+  let isNewUser = false;
+  const { data: linked } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+  if (linked?.user) {
+    userId = linked.user.id;
+  } else {
+    const { data: created, error } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { line_sub: line.sub, name: line.name, picture: line.picture },
     });
-    if (linked?.user) {
-      const { error: linkError } = await admin
-        .from('private_profiles')
-        .upsert({ id: linked.user.id, email: line.email, line_sub: line.sub }, { onConflict: 'id' });
-      if (linkError) {
-        throw new Error(`Failed to store LINE mapping: ${linkError.message}`);
-      }
-      return { userId: linked.user.id, email: line.email, isNewUser: false };
+    if (error || !created.user) {
+      throw new Error(`Failed to create Supabase user: ${error?.message ?? 'unknown error'}`);
     }
+    userId = created.user.id;
+    isNewUser = true;
   }
 
-  const { data: created, error } = await admin.auth.admin.createUser({
-    email,
-    email_confirm: true,
-    user_metadata: { line_sub: line.sub, name: line.name, picture: line.picture },
-  });
-  if (error || !created.user) {
-    throw new Error(`Failed to create Supabase user: ${error?.message ?? 'unknown error'}`);
-  }
-
-  // Anchor the line_sub mapping now; this row is what future sign-ins key off.
-  const { error: ppError } = await admin.from('private_profiles').insert({
-    id: created.user.id,
-    email,
-    line_sub: line.sub,
-  });
-  if (ppError) {
-    throw new Error(`Failed to store LINE mapping: ${ppError.message}`);
-  }
-
-  // Ensure a profiles row exists with default values; onboarding will overwrite.
-  // Mirrors the magic/Google callback bootstrap.
+  // profiles first (private_profiles.id has an FK to profiles.id), defaults
+  // mirroring the magic/Google callback bootstrap; onboarding will overwrite.
   await admin.from('profiles').upsert(
     {
-      id: created.user.id,
+      id: userId,
       display_name: line.name ?? 'New member',
       avatar_path: 'avatars/_pending.png',
       display_pref: 'avatar_name',
@@ -90,7 +74,15 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
     { onConflict: 'id', ignoreDuplicates: true },
   );
 
-  return { userId: created.user.id, email, isNewUser: true };
+  // Anchor the line_sub mapping; this row is what future sign-ins key off.
+  const { error: ppError } = await admin
+    .from('private_profiles')
+    .upsert({ id: userId, email, line_sub: line.sub }, { onConflict: 'id' });
+  if (ppError) {
+    throw new Error(`Failed to store LINE mapping: ${ppError.message}`);
+  }
+
+  return { userId, email, isNewUser };
 }
 
 function syntheticEmail(lineSub: string): string {
