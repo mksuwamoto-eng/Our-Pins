@@ -36,12 +36,32 @@ const NOT_LINKED_REPLY = `This chat is for Our Pins members. Sign in with LINE o
 const LOCATION_REPLY =
   'I can’t turn shared locations into pins yet — add it on the map! / Δεν μπορώ να κάνω pin από τοποθεσία ακόμα — πρόσθεσέ το στον χάρτη!';
 
-/** Render [[pin:<id>|<name>]] markers as plain text with a map deep-link. */
-function markersToLinks(answer: string): string {
-  return answer.replace(
-    PIN_MARKER,
-    (_, id, name) => `${name} (${publicEnv.NEXT_PUBLIC_SITE_URL}/?pin=${id})`,
-  );
+const INTRO_REPLY = `Γεια σας! I’m Parea, the Our Pins concierge for Greeks of Japan. Ask me for places the community has vouched for — try "ramen in Kyoto?" or "πού για καλό καφέ στο Τόκιο;" — and I’ll answer with who recommended what. In the group chat, start your message with @parea (or mention me). I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
+
+/**
+ * Render [[pin:<id>|<name>]] markers as "name (Google Maps URL)" — in LINE,
+ * a place link should open navigation, not the web app. Falls back to the
+ * app deep-link if the pin can't be found.
+ */
+async function markersToMapLinks(answer: string): Promise<string> {
+  const ids = [...answer.matchAll(PIN_MARKER)].map((m) => m[1]);
+  if (!ids.length) return answer;
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin
+    .from('pins')
+    .select('id, name, google_place_id, lat, lng')
+    .in('id', ids);
+  const byId = new Map((data ?? []).map((p) => [p.id, p]));
+  return answer.replace(PIN_MARKER, (_, id, name) => {
+    const pin = byId.get(id);
+    if (!pin) return `${name} (${publicEnv.NEXT_PUBLIC_SITE_URL}/?pin=${id})`;
+    const url = pin.google_place_id
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pin.name)}&query_place_id=${encodeURIComponent(pin.google_place_id)}`
+      : `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
+    // DB name, not the model's marker text — a prompt-injected corpus could
+    // otherwise put attacker-chosen lure text next to a legitimate URL.
+    return `${pin.name} (${url})`;
+  });
 }
 
 /**
@@ -75,7 +95,7 @@ async function answerQuestion(input: {
     userId: input.userId,
     lineUserId: input.lineUserId,
   });
-  const text = result.ok ? markersToLinks(result.answer) : ERROR_REPLY[result.error];
+  const text = result.ok ? await markersToMapLinks(result.answer) : ERROR_REPLY[result.error];
   await replyLineMessage({
     replyToken: input.replyToken,
     text,
@@ -105,6 +125,17 @@ async function handleEvent(
   // burn a second model call for a reply LINE will reject.
   if (event.deliveryContext?.isRedelivery) return;
 
+  // Someone added the bot as a friend: introduce it (the OA-side greeting
+  // message is disabled so this copy is the single source of truth).
+  if (event.type === 'follow' && event.replyToken) {
+    await replyLineMessage({
+      replyToken: event.replyToken,
+      text: INTRO_REPLY,
+      accessToken: opts.accessToken,
+    });
+    return;
+  }
+
   // Bot added to a group: surface the groupId in the logs so it can be
   // copied into LINE_GROUP_ID.
   if (event.type === 'join' && event.source?.type === 'group') {
@@ -112,7 +143,7 @@ async function handleEvent(
     if (event.replyToken) {
       await replyLineMessage({
         replyToken: event.replyToken,
-        text: 'Γεια σας! I’m Parea — mention me with a question like "@Parea ramen in Kyoto?" and I’ll answer from the community’s pins.',
+        text: INTRO_REPLY,
         accessToken: opts.accessToken,
       });
     }

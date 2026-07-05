@@ -7,7 +7,10 @@ const PUBLIC_PREFIXES = [
   '/invite',
   '/auth',
   '/api/auth',
-  '/api/line',
+  // Exact route, not the '/api/line' subtree: the webhook authenticates its
+  // own requests (HMAC), but a future route under /api/line must not be
+  // silently public.
+  '/api/line/webhook',
   '/no-invite',
   '/privacy',
   '/manifest',

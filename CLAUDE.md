@@ -227,8 +227,7 @@ In `supabase/migrations/`:
 - `0014` — `pins.translations` + `vouches.translations` jsonb for the
   language bridge.
 - `0015` — `concierge_queries.user_id` nullable + `line_user_id` (LINE
-  bot asker logging/caps). **NOT yet applied to cloud** — LINE-keyed
-  queries fail closed until it is; web unaffected.
+  bot asker logging/caps). Applied to cloud July 6, 2026.
 
 ---
 

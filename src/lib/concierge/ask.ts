@@ -83,6 +83,23 @@ export async function askParea(input: {
   if (monthlySpend >= budget) return { ok: false, error: 'budget_exhausted' };
   if ((todayCount ?? 0) >= DAILY_QUERIES_PER_USER) return { ok: false, error: 'daily_limit' };
 
+  // Reserve the quota slot BEFORE the slow model call: concurrent messages
+  // would otherwise all pass the caps during one another's model latency.
+  // A failed reservation blocks the query — fail closed, like the guards.
+  const { data: logRow, error: reserveError } = await admin
+    .from('concierge_queries')
+    .insert({
+      user_id: input.userId ?? null,
+      ...(input.lineUserId ? { line_user_id: input.lineUserId } : {}),
+      question,
+    })
+    .select('id')
+    .single();
+  if (reserveError || !logRow) {
+    console.error('concierge usage reservation failed:', reserveError);
+    return { ok: false, error: 'model_error' };
+  }
+
   const corpus = await buildCorpus();
 
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
@@ -129,19 +146,17 @@ export async function askParea(input: {
       u.output_tokens * RATE.output) /
     1_000_000;
 
-  const { error: logError } = await admin.from('concierge_queries').insert({
-    user_id: input.userId ?? null,
-    // Only mention the column when set, so web logging keeps working if the
-    // code deploys before migration 0015 lands.
-    ...(input.lineUserId ? { line_user_id: input.lineUserId } : {}),
-    question,
-    input_tokens: u.input_tokens,
-    cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
-    cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
-    output_tokens: u.output_tokens,
-    cost_usd: costUsd,
-  });
-  // A failed log write must not eat the answer, but it does break the spend
+  const { error: logError } = await admin
+    .from('concierge_queries')
+    .update({
+      input_tokens: u.input_tokens,
+      cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+      cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+      output_tokens: u.output_tokens,
+      cost_usd: costUsd,
+    })
+    .eq('id', logRow.id);
+  // A failed cost update must not eat the answer, but it does break the spend
   // cap's bookkeeping — make it loud in the server logs.
   if (logError) console.error('concierge usage log failed:', logError);
 
