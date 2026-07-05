@@ -7,6 +7,7 @@ const PUBLIC_PREFIXES = [
   '/invite',
   '/auth',
   '/api/auth',
+  '/api/line',
   '/no-invite',
   '/privacy',
   '/manifest',
@@ -29,7 +30,9 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) {
     const signInUrl = new URL('/sign-in', request.url);
-    signInUrl.searchParams.set('next', pathname);
+    // Keep the query string: LINE-bot deep-links arrive as /?pin=<id> and the
+    // pin id must survive the sign-in round trip.
+    signInUrl.searchParams.set('next', pathname + request.nextUrl.search);
     return NextResponse.redirect(signInUrl);
   }
 
