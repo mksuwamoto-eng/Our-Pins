@@ -8,6 +8,7 @@ const PUBLIC_PREFIXES = [
   '/auth',
   '/api/auth',
   '/no-invite',
+  '/privacy',
   '/manifest',
   '/icons',
   '/favicon',
