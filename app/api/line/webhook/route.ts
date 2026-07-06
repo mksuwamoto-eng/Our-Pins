@@ -31,12 +31,23 @@ const ERROR_REPLY: Record<AskError, string> = {
   model_refused: 'Something went wrong on my end — try again later. / Κάτι πήγε στραβά — δοκίμασε ξανά αργότερα.',
 };
 
-const NOT_LINKED_REPLY = `This chat is for Our Pins members. Sign in with LINE once at ${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in and then ask me anything! / Συνδέσου μία φορά με LINE στο ${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in και μετά ρώτα με ό,τι θες!`;
+// Bare sign-in doesn't work without an invite: the LINE callback would mint
+// a non-member account and middleware bounces it to /no-invite. The path
+// that DOES work today is invite link → sign in with LINE — so that's what
+// the copy has to say.
+const NOT_LINKED_REPLY =
+  'This chat is for Our Pins members. Ask Mako (or the group) for an invite link, open it, and sign in with LINE — then ask me anything! / Ζήτα από τον Μάκο (ή την ομάδα) ένα invite link, άνοιξέ το και συνδέσου με LINE — μετά ρώτα με ό,τι θες!';
 
 const LOCATION_REPLY =
   'I can’t turn shared locations into pins yet — add it on the map! / Δεν μπορώ να κάνω pin από τοποθεσία ακόμα — πρόσθεσέ το στον χάρτη!';
 
-const INTRO_REPLY = `Γεια σας! I’m Parea, the Our Pins concierge for Greeks of Japan. Ask me for places the community has vouched for — try "ramen in Kyoto?" or "πού για καλό καφέ στο Τόκιο;" — and I’ll answer with who recommended what. In the group chat, start your message with @parea (or mention me). I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
+const TEXT_ONLY_REPLY =
+  'I only understand text for now 💬 / Καταλαβαίνω μόνο κείμενο προς το παρόν!';
+
+const USAGE_HINT_REPLY =
+  'Γεια! 👋 Ask me about places members have vouched for — e.g. "@parea πού για καλό καφέ;" or "@parea any good restaurants in Tokyo?"';
+
+const INTRO_REPLY = `Γεια σας! I’m Parea, the Our Pins concierge for Greeks of Japan. Ask me for places the community has vouched for — try "πού για καλό καφέ;" or "any good restaurants in Tokyo?" — and I’ll answer with who recommended what. In the group chat, start your message with @parea (or mention me). I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
 
 /**
  * Render [[pin:<id>|<name>]] markers as "name (Google Maps URL)" — in LINE,
@@ -155,8 +166,7 @@ async function handleEvent(
 
   if (source.type === 'user' && source.userId) {
     // 1:1 chat: active members only, verified via the LINE-login mapping.
-    if (message?.type !== 'text' && message?.type !== 'location') return;
-    if (message.type === 'text' && !message.text?.trim()) return;
+    if (!message) return;
     const userId = await activeMemberIdForLineUser(source.userId);
     if (!userId) {
       await replyLineMessage({
@@ -170,6 +180,16 @@ async function handleEvent(
       await replyLineMessage({
         replyToken: event.replyToken,
         text: LOCATION_REPLY,
+        accessToken: opts.accessToken,
+      });
+      return;
+    }
+    // Stickers are how people talk on LINE — ignoring one in a 1:1 chat
+    // reads as broken. Canned reply, no model call.
+    if (message.type !== 'text' || !message.text?.trim()) {
+      await replyLineMessage({
+        replyToken: event.replyToken,
+        text: TEXT_ONLY_REPLY,
         accessToken: opts.accessToken,
       });
       return;
@@ -190,7 +210,17 @@ async function handleEvent(
     if (!opts.groupId || source.groupId !== opts.groupId) return;
     if (message?.type !== 'text' || !message.text) return;
     const question = groupQuestion(message)?.trim();
-    if (!question) return;
+    if (question === undefined) return;
+    if (!question) {
+      // A bare "@Parea" is how people poke a bot to see if it's alive —
+      // answer with a usage hint instead of silence. Canned, no model call.
+      await replyLineMessage({
+        replyToken: event.replyToken,
+        text: USAGE_HINT_REPLY,
+        accessToken: opts.accessToken,
+      });
+      return;
+    }
     if (!source.userId) {
       // LINE omits userId for members who haven't agreed to its OA terms;
       // without it we can't rate-limit them, so we stay silent — but say why.

@@ -27,8 +27,10 @@ runs its own fully independent instance.
 ## Out of v1 (deferred)
 
 AI screenshot extraction, itineraries, leaderboard, audit-log UI, categories
-CRUD UI. See `/root/.claude/plans/use-the-grill-me-lively-pearl.md` for the
-full plan including the deferred features.
+CRUD UI. Also deferred: a client-side photo uploader for pins (the signed-URL
+API route exists; only the UI is missing), and admin bootstrap via UI instead
+of a manual SQL update (useful for co-admins or forks). See `CLAUDE.md` for
+the full running list of open issues.
 
 ## Stack
 

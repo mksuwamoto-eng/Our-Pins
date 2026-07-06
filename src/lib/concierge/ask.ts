@@ -18,6 +18,7 @@ Your ONLY source of knowledge is the community corpus below. Rules:
 - Always say WHO vouched: cite members by their display name and quote or paraphrase their words. The whole point is "your friend Eleni loved this", not anonymous ratings.
 - Every time you mention a place from the corpus, mark it inline as [[pin:<id>|<name>]] using the pin's exact id and name. Use the marker instead of the bare name.
 - Answer in the same language the question was asked in (Greek or English).
+- Write plain conversational text — no markdown (no asterisks, no headers). Simple dashes for lists are fine. Your answer is shown verbatim in chat bubbles that do not render markdown.
 - If the corpus has nothing relevant, say so honestly and warmly — suggest they ask the community or be the first to pin something. Do not pad with generic travel advice.
 - Keep answers conversational and short: a few good suggestions beat an exhaustive list.`;
 
@@ -109,7 +110,10 @@ export async function askParea(input: {
   try {
     response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 1200,
+      // Caps thinking + answer combined (adaptive thinking is on), so leave
+      // headroom — a thought-heavy query can eat hundreds of tokens before
+      // the answer starts, and Greek text is token-hungrier than English.
+      max_tokens: 2000,
       thinking: { type: 'adaptive' },
       output_config: { effort: 'low' },
       system: [
@@ -134,11 +138,23 @@ export async function askParea(input: {
 
   if (response.stop_reason === 'refusal') return { ok: false, error: 'model_refused' };
 
-  const answer = response.content
+  let answer = response.content
     .filter((b): b is Anthropic.TextBlock => b.type === 'text')
     .map((b) => b.text)
     .join('\n')
     .trim();
+
+  // A max_tokens cut ships mid-sentence — or worse, mid-[[pin:…]] marker,
+  // which renderers would show as raw syntax. Drop any half-open marker,
+  // then end on the last complete sentence.
+  if (response.stop_reason === 'max_tokens') {
+    const lastOpen = answer.lastIndexOf('[[');
+    if (lastOpen !== -1 && !answer.slice(lastOpen).includes(']]')) {
+      answer = answer.slice(0, lastOpen);
+    }
+    const cut = Math.max(...['.', '!', '?', ';', '\n'].map((c) => answer.lastIndexOf(c)));
+    if (cut > 0) answer = answer.slice(0, cut + 1).trimEnd();
+  }
 
   const u = response.usage;
   const costUsd =
