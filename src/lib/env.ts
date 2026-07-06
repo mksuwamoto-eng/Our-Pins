@@ -25,6 +25,11 @@ const serverSchema = publicSchema.extend({
   // Optional: the Parea Concierge returns 503 until this is set.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   CONCIERGE_MONTHLY_BUDGET_USD: z.coerce.number().positive().optional(),
+  // Optional: shared community Drive folder linked from the header "Files"
+  // nav item. Kept server-only (not NEXT_PUBLIC_) and out of the repo so the
+  // folder URL isn't readable by anyone who isn't a signed-in member — the
+  // nav item is simply omitted until this is set.
+  COMMUNITY_FILES_URL: z.string().url().optional(),
 });
 
 export const publicEnv = publicSchema.parse({

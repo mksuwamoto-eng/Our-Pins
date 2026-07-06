@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { getServerEnv } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
@@ -11,6 +12,8 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const tSettings = await getTranslations('settings');
   const tActivity = await getTranslations('activity');
   const tMembers = await getTranslations('members');
+
+  const { COMMUNITY_FILES_URL } = getServerEnv();
 
   const supabase = await createSupabaseServerClient();
   const { data: sess } = await supabase.auth.getSession();
@@ -39,14 +42,16 @@ export async function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/activity">{tActivity('title')}</Link>
           <Link href="/members">{tMembers('title')}</Link>
-          <a
-            href="https://drive.google.com/drive/folders/1nLGcaYZOwoO-2tFYKllJqBsfa4pzCTvy?usp=sharing"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={t('filesTooltip')}
-          >
-            {t('files')} <span aria-hidden="true">↗</span>
-          </a>
+          {COMMUNITY_FILES_URL ? (
+            <a
+              href={COMMUNITY_FILES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={t('filesTooltip')}
+            >
+              {t('files')} <span aria-hidden="true">↗</span>
+            </a>
+          ) : null}
           {userRole === 'admin' ? <Link href="/admin/members">{tAdmin('title')}</Link> : null}
           <Link href="/settings">{tSettings('title')}</Link>
           <LanguageToggle />
