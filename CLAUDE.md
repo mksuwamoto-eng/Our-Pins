@@ -12,8 +12,8 @@ Tap any place on a Google map → see vouches from the community or be
 the first to vouch. Mako (the user) is the lead admin.
 
 - **Repo**: `mksuwamoto-eng/Our-Pins` (capital O, capital P)
-- **Production**: https://our-pins.vercel.app (Vercel; custom domain
-  `ourpins.app` planned but not attached)
+- **Production**: https://our-pins.vercel.app (Vercel; no custom
+  domain planned — decided against `ourpins.app`, July 6, 2026)
 - **Default branch**: `main`
 - **Active feature branch**: `claude/deploy-vercel-Lh8VI` (kept ahead
   of main; local Claude on Mako's Mac merges to main + pushes)
@@ -53,9 +53,10 @@ the first to vouch. Mako (the user) is the lead admin.
   in Test Users allowlist).
 - **Vercel**: deployed from `main`. Env vars set in dashboard (all 11
   from `.env.example`, with `NEXT_PUBLIC_SITE_URL=https://our-pins.vercel.app`).
-- **LINE Developers**: not yet set up. Path B bridge code exists in
-  `src/lib/auth/line-jwt-bridge.ts` and is ready, needs Channel ID +
-  Secret. Sign-in page has the button but the flow won't work yet.
+- **LINE Developers**: LINE Login channel set up and working (Login +
+  1:1 Concierge bot both live). Messaging API channel created under
+  the same provider for the Parea bot; group-chat mode not yet
+  enabled (bot not added to the group — see "LINE bot 'Parea'" below).
 
 Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 **Never commit that file.**
@@ -114,12 +115,16 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 
 ---
 
-## Built but NOT yet live: LINE bot "Parea" (July 5, 2026 session)
+## LINE bot "Parea" — 1:1 live, group chat on hold (July 6, 2026)
 
 The Concierge is reachable from LINE — the "LINE bridge" from the
 vision deck (Horizon 2). `app/api/line/webhook/route.ts` receives
 LINE Messaging API webhooks (signature-verified, ACKs immediately,
-answers in `after()` via reply tokens — free, 1-min TTL):
+answers in `after()` via reply tokens — free, 1-min TTL). **1:1 chat
+confirmed working by Mako (July 6, 2026)** — Messaging API channel
+created under the same provider as LINE Login, `LINE_MESSAGING_CHANNEL_SECRET`
+/ `LINE_MESSAGING_ACCESS_TOKEN` set in `.env.local` + Vercel, migration
+0015 applied to cloud. Group chat is deliberately on hold, not blocked:
 
 - **Group chat**: answers only in the group whose id matches
   `LINE_GROUP_ID`, and only when @mentioned or the text starts with
@@ -137,22 +142,20 @@ answers in `after()` via reply tokens — free, 1-min TTL):
 - Vouch-drafting from shared locations: deliberately NOT in v1
   (replies "can't do that yet").
 
-**To go live, Mako must:**
-1. `pnpm db:push` — apply migration 0015 (classifier blocked Claude
-   again). Until applied, LINE queries fail closed (web unaffected).
-2. In LINE Developers console: create a **Messaging API channel under
-   the SAME provider as the LINE Login channel** (critical — userIds
-   are provider-scoped; a different provider breaks the line_sub
-   mapping permanently). Issue a channel access token; disable
-   auto-reply + greeting; enable "Allow bot to join group chats";
-   set webhook URL `https://our-pins.vercel.app/api/line/webhook`,
-   enable webhook.
-3. Set `LINE_MESSAGING_CHANNEL_SECRET`, `LINE_MESSAGING_ACCESS_TOKEN`
-   in `.env.local` + Vercel (webhook returns 503 until then).
-4. Add the bot to the Greeks-of-Japan LINE group; copy the groupId
+**To bring the group-chat mode live, Mako must decide + then:**
+
+Mako is reconsidering whether the group mode should ship at all — the
+concern is that even mention-gated (`@parea` only, not passive), a
+public group chat used for other things could feel like noise if
+several people ask restaurant questions back to back. Alternative
+floated: don't add the bot to the group; instead publicize the bot's
+LINE account so members reach it 1:1 individually. Decision pending —
+the remaining steps below are only relevant if group mode is a go:
+
+1. Add the bot to the Greeks-of-Japan LINE group; copy the groupId
    from the `[line/webhook] joined group:` line in Vercel logs into
    `LINE_GROUP_ID` (both envs); redeploy.
-5. Test: @mention in group + 1:1 DM from a linked member.
+2. Test: @mention in group.
 
 ---
 
@@ -165,14 +168,12 @@ In rough priority:
    `app/api/pins/[id]/photos/route.ts`; the client-side uploader was
    deferred. Avatar upload (via `/api/profile/avatar` route + admin
    client) is the template to copy from.
-2. **LINE bot go-live** — see "Built but NOT yet live" above (console
-   setup, env vars, migration 0015). LINE Login itself is DONE and
-   verified; only the email-permission approval is still pending (see
-   "What works in production").
-3. **Custom domain `ourpins.app`**. Owned (or planned to be); not
-   attached to Vercel yet. When attached, update
-   `NEXT_PUBLIC_SITE_URL`, Supabase Site URL, Google OAuth origins,
-   and Maps key referrers.
+2. **LINE bot group-chat mode** — 1:1 is DONE and confirmed working
+   (July 6, 2026); see "LINE bot 'Parea'" above. Group mode is on hold
+   pending Mako's call on whether it's worth the noise vs. just
+   publicizing the bot's LINE account for 1:1 use.
+3. ~~Custom domain `ourpins.app`~~ — DECIDED AGAINST (July 6, 2026).
+   Not pursuing; production stays on `our-pins.vercel.app`.
 4. **SMTP for magic-link emails**. Currently Supabase's default
    sender (rate-limited ~3/hr, spam-prone). Resend on the
    `onboarding@resend.dev` sender works zero-setup; Resend + verified
