@@ -30,7 +30,7 @@ the first to vouch. Mako (the user) is the lead admin.
 - Tailwind 4 (beta) with custom theme; new `--surface-subtle` variable
   for dark-mode-aware card backgrounds (washi-100 light / indigo-700
   dark)
-- Supabase: Auth, Postgres (cloud project `soxxftpdyvlvaqkzvmxj`),
+- Supabase: Auth, Postgres (project ref in `.env.local`, not committed),
   Storage, Realtime
 - `@supabase/ssr` for the SSR cookie dance, no ORM by design
 - Google Maps JS API + Places API (New) v1
@@ -42,8 +42,8 @@ the first to vouch. Mako (the user) is the lead admin.
 
 ## Infra accounts
 
-- **Supabase**: project `soxxftpdyvlvaqkzvmxj`, Northeast Asia (Tokyo),
-  Postgres 17. Custom Access Token JWT hook points at
+- **Supabase**: project ref in `.env.local` (not committed), Northeast Asia
+  (Tokyo), Postgres 17. Custom Access Token JWT hook points at
   `public.access_token_hook` and sets `is_member`, `user_role`,
   `onboarded` claims.
 - **Google Cloud**: project `our-pins`. APIs enabled: Maps JS, Places
