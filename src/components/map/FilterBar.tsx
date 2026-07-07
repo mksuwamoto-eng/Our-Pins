@@ -44,7 +44,8 @@ export function FilterBar({ categories, members }: { categories: Category[]; mem
           ))}
         </select>
       </div>
-      <div className="flex flex-wrap gap-1">
+      {/* One swipeable row on phones; wraps into rows on wider screens. */}
+      <div className="flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0 [&::-webkit-scrollbar]:hidden">
         {categories.map((c) => {
           const active = categoryIds.includes(c.id);
           return (
@@ -52,7 +53,7 @@ export function FilterBar({ categories, members }: { categories: Category[]; mem
               key={c.id}
               onClick={() => toggle(c.id)}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs',
+                'shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs',
                 active
                   ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
                   : 'border-[var(--border)] bg-[var(--surface)]/95 text-[var(--fg)]',

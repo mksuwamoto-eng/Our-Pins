@@ -33,7 +33,21 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
     .maybeSingle();
 
   if (existing) {
-    return { userId: existing.id, email: existing.email ?? syntheticEmail(line.sub), isNewUser: false };
+    // The auth user's own email is the only safe magic-link target. Deriving
+    // it (private_profiles.email fallback to syntheticEmail) signed the
+    // browser into a DIFFERENT auth user when the stored email was null:
+    // Supabase lowercases emails, its lookup is case-insensitive, and LINE
+    // subs are mixed-case — the synthetic alias can resolve to an orphan
+    // account instead of existing.id.
+    const { data: authUser, error } = await admin.auth.admin.getUserById(existing.id);
+    if (error || !authUser.user?.email) {
+      throw new Error(`No auth user for LINE mapping ${existing.id}: ${error?.message ?? 'no email'}`);
+    }
+    const email = authUser.user.email;
+    if (existing.email !== email) {
+      await admin.from('private_profiles').update({ email }).eq('id', existing.id);
+    }
+    return { userId: existing.id, email, isNewUser: false };
   }
 
   const email = line.email ?? syntheticEmail(line.sub);
@@ -63,16 +77,20 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
 
   // profiles first (private_profiles.id has an FK to profiles.id), defaults
   // mirroring the magic/Google callback bootstrap; onboarding will overwrite.
-  await admin.from('profiles').upsert(
+  const { error: profileError } = await admin.from('profiles').upsert(
     {
       id: userId,
-      display_name: line.name ?? 'New member',
+      // display_name has a 1-60 char CHECK; LINE names can exceed it.
+      display_name: (line.name ?? 'New member').slice(0, 60) || 'New member',
       avatar_path: 'avatars/_pending.png',
       display_pref: 'avatar_name',
       is_member: false,
     },
     { onConflict: 'id', ignoreDuplicates: true },
   );
+  if (profileError) {
+    throw new Error(`Failed to bootstrap profile: ${profileError.message}`);
+  }
 
   // Anchor the line_sub mapping; this row is what future sign-ins key off.
   const { error: ppError } = await admin
@@ -86,7 +104,10 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
 }
 
 function syntheticEmail(lineSub: string): string {
-  return `line.${lineSub}@line.our-pins.local`;
+  // Lowercase: Supabase normalizes emails to lowercase on creation, so a
+  // mixed-case alias (LINE subs start with 'U') would never round-trip to
+  // the same string we later derive.
+  return `line.${lineSub.toLowerCase()}@line.our-pins.local`;
 }
 
 /**
