@@ -294,7 +294,10 @@ function ExistingPinView({
 
       <div className="mt-6 border-t border-[var(--border)] pt-4">
         <h3 className="text-sm font-medium">
-          {t('vouchedBy')} ({vouches.length})
+          {/* Creator counts unconditionally: their card below always renders
+              (the vouch_note IS their vouch), so the number must match even
+              if the auto-vouch row is missing on legacy pins. */}
+          {t('vouchedBy')} ({otherVouches.length + 1})
         </h3>
 
         <div className="mt-3 rounded-lg bg-[var(--surface-subtle)] p-3">
@@ -386,7 +389,10 @@ function ExistingPinView({
           })}
         </ul>
 
-        <VouchPanel pinId={pin.id} onChange={() => setRefreshKey((k) => k + 1)} />
+        {/* Creators don't vouch-toggle their own pin — their note is the vouch. */}
+        {currentUserId !== pin.created_by ? (
+          <VouchPanel pinId={pin.id} onChange={() => setRefreshKey((k) => k + 1)} />
+        ) : null}
       </div>
     </>
   );
