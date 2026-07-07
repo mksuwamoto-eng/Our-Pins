@@ -176,7 +176,10 @@ export function BoardClient({ posts, meId, isAdmin }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                setError(null);
+              }}
               className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm"
             >
               {t('cancel')}
@@ -185,7 +188,10 @@ export function BoardClient({ posts, meId, isAdmin }: Props) {
         </form>
       ) : (
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setShowForm(true);
+            setError(null);
+          }}
           className="flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white"
         >
           <Plus className="h-4 w-4" />
