@@ -27,7 +27,9 @@ export async function translateBoth(text: string): Promise<{ el: string; en: str
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2200,
+      // Must fit verbatim copy + translation of the longest input (board
+      // posts allow 2000 chars); 2200 truncated those and broke the JSON.
+      max_tokens: 6000,
       output_config: { format: FORMAT },
       system:
         'You translate short community reviews between Greek and English for a private map app. ' +
@@ -58,6 +60,15 @@ export async function translatePinNote(pinId: string, note: string) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.from('pins').update({ translations }).eq('id', pinId);
   if (error) console.error('storing pin translation failed:', error);
+}
+
+/** Translate a board post's body and store it. Fire from next/server after(). */
+export async function translateBoardPost(postId: string, body: string) {
+  const translations = await translateBoth(body);
+  if (!translations) return;
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.from('board_posts').update({ translations }).eq('id', postId);
+  if (error) console.error('storing board post translation failed:', error);
 }
 
 /** Translate a vouch comment and store it. Fire from next/server after(). */

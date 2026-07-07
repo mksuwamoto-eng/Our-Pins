@@ -38,6 +38,8 @@
     "displayPrefAvatarName": "Φωτογραφία και όνομα",
     "instagram": "Instagram",
     "website": "Ιστοσελίδα",
+    "bio": "Λίγα λόγια για σένα",
+    "bioHelp": "Πες στην κοινότητα δυο λόγια — πού μένεις, με τι ασχολείσαι.",
     "guidelinesAccept": "Συμφωνώ με τους κανόνες της κοινότητας",
     "submit": "Συνέχεια"
   },
@@ -48,7 +50,9 @@
     "list": "Λίστα",
     "newPinToast": "{name} πρόσθεσε ένα pin",
     "loadError": "Ο χάρτης δεν φόρτωσε. Έλεγξε τη σύνδεσή σου και ανανέωσε τη σελίδα.",
-    "addPlaceTooltip": "Πρόσθεσε ένα μέρος που δεν είναι ήδη στον χάρτη"
+    "addPlaceTooltip": "Πρόσθεσε ένα μέρος που δεν είναι ήδη στον χάρτη",
+    "everyone": "Όλοι",
+    "memberFilter": "Δείξε pins από"
   },
   "pin": {
     "vouchedBy": "Έχουν εγγυηθεί",
@@ -91,7 +95,35 @@
     "pinsCount": "{count, plural, one {# pin} other {# pins}}",
     "vouchesCount": "{count, plural, one {# εγγύηση} other {# εγγυήσεις}}",
     "pinsHeading": "Pins",
-    "noPinsYet": "{name} δεν έχει προσθέσει τίποτα ακόμη."
+    "noPinsYet": "{name} δεν έχει προσθέσει τίποτα ακόμη.",
+    "viewOnMap": "Δες τα στον χάρτη"
+  },
+  "board": {
+    "title": "Πίνακας ανακοινώσεων",
+    "navTitle": "Ανακοινώσεις",
+    "subtitle": "Δουλειές, στέγαση, πωλητήρια, εκδηλώσεις — ό,τι πρέπει να ξέρει η κοινότητα.",
+    "newPost": "Νέα ανακοίνωση",
+    "allCategories": "Όλα",
+    "category_job": "Δουλειά",
+    "category_housing": "Στέγαση",
+    "category_for_sale": "Πωλείται / χαρίζεται",
+    "category_event": "Εκδήλωση",
+    "category_other": "Άλλο",
+    "categoryLabel": "Κατηγορία",
+    "titleLabel": "Τίτλος",
+    "titlePlaceholder": "Τι ανακοινώνεις;",
+    "bodyLabel": "Λεπτομέρειες",
+    "bodyPlaceholder": "Πες περισσότερα — γράψε και πώς να σε βρουν.",
+    "expiryNote": "Οι ανακοινώσεις σβήνονται αυτόματα μετά από 30 μέρες.",
+    "submit": "Δημοσίευση",
+    "posting": "Δημοσίευση…",
+    "postFailed": "Δεν δημοσιεύτηκε — δοκίμασε ξανά.",
+    "requiredFields": "Γράψε πρώτα τίτλο και λεπτομέρειες.",
+    "cancel": "Ακύρωση",
+    "remove": "Αφαίρεση",
+    "removeFailed": "Δεν αφαιρέθηκε — δοκίμασε ξανά.",
+    "empty": "Τίποτα εδώ ακόμη. Μοιράσου κάτι με την κοινότητα!",
+    "formerMember": "Πρώην μέλος"
   },
   "activity": {
     "title": "Δραστηριότητα",

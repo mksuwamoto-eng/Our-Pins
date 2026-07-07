@@ -11,6 +11,7 @@ interface Props {
     displayName: string;
     instagram: string;
     website: string;
+    bio: string;
     avatarPath: string;
     avatarUrl: string | null;
   };
@@ -24,6 +25,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [instagram, setInstagram] = useState(initial.instagram);
   const [website, setWebsite] = useState(initial.website);
+  const [bio, setBio] = useState(initial.bio);
   const [avatarPath, setAvatarPath] = useState(initial.avatarPath);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
         displayName: displayName.trim(),
         instagram: instagram.trim(),
         website: website.trim(),
+        bio: bio.trim(),
         avatarPath: avatarPath || undefined,
       }),
     });
@@ -73,6 +76,18 @@ export function ProfileEditForm({ userId, initial }: Props) {
           required
           minLength={1}
           maxLength={60}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium">{t('bio')}</label>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          maxLength={500}
+          rows={3}
+          placeholder={t('bioHelp')}
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
         />
       </div>
