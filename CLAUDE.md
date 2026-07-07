@@ -214,7 +214,15 @@ In rough priority:
    `translations` for pre-existing pins/vouches (script not written).
 9. **Mobile UX pass**. App is shipped but never tested on a real iOS
    device. Bottom sheets / virtual-keyboard handling / tap targets
-   should be sanity-checked on iPhone.
+   should be sanity-checked on iPhone. (Android/Pixel pass done July 8,
+   2026 via emulated viewport: header + filter chips fixed.)
+10. **`pins.google_place_id` has NO unique constraint** (found July 8,
+   2026: two identical Truffle Bakery pins; dup archived). The
+   POST /api/pins 409 handling assumes a 23505 that can never fire,
+   and MapView's place-click lookup silently hides one duplicate.
+   Fix: migration with a partial unique index
+   (`where google_place_id is not null and archived_at is null`)
+   after checking prod for remaining dups.
 
 ---
 
