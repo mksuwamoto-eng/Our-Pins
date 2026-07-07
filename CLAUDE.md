@@ -82,7 +82,9 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
   no community pin exists.
 - ✅ Pin marker click → same sheet → vouch / un-vouch / comment.
 - ✅ Pin edit (category + vouch_note) and soft-delete (archive) for
-  creator OR admin.
+  creator OR admin. (NOTE: creator-archive was silently broken for
+  non-admins from launch until migration 0017 — it had only ever been
+  verified as admin.)
 - ✅ Admin tabs: members (promote/demote/revoke), invites (mint with
   note + count, copy link, revoke; revoked invites show "Revoked"
   state), moderation (archive/restore feed).
@@ -252,6 +254,14 @@ In `supabase/migrations/`:
 - `0016` — `profiles.bio` (+ additive column grant per the 0012
   pattern) + `board_posts` table with RLS (`user_role` claim) and
   column-restricted INSERT/UPDATE grants.
+- `0017` — **critical fix**: non-admin creators couldn't soft-archive
+  their own pins OR board posts (42501). PostgREST wraps UPDATE in a
+  RETURNING CTE, so the NEW row must pass a SELECT policy — archiving
+  made it invisible. Added `or created_by = auth.uid()` to
+  pins_select and board_posts_select. Trade-off: an owner can now
+  also un-archive their own row via direct API (no UI), so a
+  determined member could undo an admin archive of their own content
+  — accepted at this trust level.
 
 ---
 
@@ -356,6 +366,19 @@ src/
   the original schema that assumed `avatars/<uid>.<ext>`).
 - **Google reserves the top-level JWT `role` claim**. App role lives
   at `user_role`.
+- **Soft-archive + RLS**: PostgREST wraps every UPDATE in a RETURNING
+  CTE (even `Prefer: return=minimal`), and Postgres requires the NEW
+  row to pass a SELECT policy. Any policy of the shape "visible only
+  while archived_at is null" makes owners unable to set archived_at
+  on their own rows (42501 "new row violates row-level security").
+  Keep rows SELECT-visible to their creator (`or created_by =
+  auth.uid()`), as 0017 does. Test archive paths as a NON-admin —
+  the admin arm masks this class of bug.
+- **Minting a member JWT for API testing**: sign HS256 with
+  `SUPABASE_JWT_SECRET` from `.env.local`, claims `{sub, aud:
+  'authenticated', role: 'authenticated', is_member, user_role,
+  onboarded, exp}` — PostgREST accepts it like a real session token.
+  Lets you reproduce RLS behavior per-user without a browser.
 - **After flipping `is_member` or `role`**, the user must sign out and
   back in for the JWT to refresh. Force via
   `supabase.auth.signOut(userId)` from the admin client if needed.
