@@ -42,6 +42,16 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   } = await supabase.auth.getUser();
   if (!user) return new NextResponse('unauth', { status: 401 });
 
+  // The creator's vouch IS the pin (the vouch_note). Removing it leaves a
+  // contradictory "0 vouches but a recommendation" state — archive the pin
+  // instead.
+  const { data: pin } = await supabase.from('pins').select('created_by').eq('id', id).maybeSingle();
+  if (pin?.created_by === user.id) {
+    return new NextResponse('creators cannot un-vouch their own pin — archive it instead', {
+      status: 403,
+    });
+  }
+
   const { error } = await supabase
     .from('vouches')
     .delete()
