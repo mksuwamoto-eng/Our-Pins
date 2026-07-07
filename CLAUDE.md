@@ -103,8 +103,9 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
   users get synthetic emails (`line.<sub>@line.our-pins.local`), so
   existing Google/magic accounts don't auto-link.
 - ✅ **Parea Concierge** — chat FAB (bottom-left of the map) →
-  `/api/concierge` answers questions from the community's pins/vouches
-  only, via Claude (`claude-opus-4-8`), citing members by name;
+  `/api/concierge` answers questions from the community's pins/vouches,
+  member bios, and active noticeboard posts (corpus sections added
+  July 8, 2026 — all bounded, so cost stays flat), citing members by name;
   `[[pin:id|name]]` markers render as deep-links. Full-corpus prompt
   (no vector store — deliberate at this scale) with prompt caching.
   Spend caps: `concierge_queries` log table, default $10/month
@@ -374,6 +375,16 @@ src/
   Keep rows SELECT-visible to their creator (`or created_by =
   auth.uid()`), as 0017 does. Test archive paths as a NON-admin —
   the admin arm masks this class of bug.
+- **LINE re-sign-in bug (fixed July 8, 2026)**: for members with an
+  existing line_sub mapping, the magic-link email was derived from
+  `private_profiles.email` with a synthetic fallback; Supabase
+  lowercases emails and matches case-insensitively, and LINE subs are
+  mixed-case — so a null stored email routed the session to a
+  different (orphan) auth user → /no-invite despite valid membership.
+  session.ts now resolves the email from the auth user by id
+  (getUserById) and backfills private_profiles.email. If LINE sign-in
+  ever "loses" membership again, first check auth.users for users
+  with `@line.our-pins.local` emails and no matching profiles row.
 - **Minting a member JWT for API testing**: sign HS256 with
   `SUPABASE_JWT_SECRET` from `.env.local`, claims `{sub, aud:
   'authenticated', role: 'authenticated', is_member, user_role,
