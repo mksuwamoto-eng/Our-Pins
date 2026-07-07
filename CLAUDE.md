@@ -112,6 +112,26 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
   EL↔EN on write (via `next/server after()`), stored in
   `translations jsonb`; PinSheet shows the reader's language with a
   "translated" toggle. No backfill of old rows yet.
+- **Community features batch (July 7, 2026; needs migration 0016)**:
+  - **Person filter** — member dropdown in the map FilterBar (only
+    members with ≥1 pin); wired the pre-existing-but-unused
+    `authorIds` in `src/stores/filters.ts`. Member profile pages link
+    to `/?author=<id>` ("See them on the map"); MapView absorbs the
+    param into the store and cleans the URL.
+  - **Profile bio** — `profiles.bio` (≤500 chars), editable at
+    `/settings/profile` (0016 extends the 0012 column-grant set),
+    shown on `/members/[id]` along with pins/vouches counts and a
+    clickable pin list. Not part of onboarding (deliberate).
+  - **Noticeboard** — `/board` ("Board"/"Ανακοινώσεις" in nav):
+    `board_posts` table, categories job/housing/for_sale/event/other,
+    posts auto-expire 30 days after posting (filtered in the page
+    query; rows stay in the DB), body goes through the language
+    bridge. Trust model mirrors pins: any member posts, creator or
+    admin soft-archives ("Remove"); no approval queue. Column grants
+    lock direct PostgREST writes to insert(content cols) +
+    update(archived_at) only. Known v1 gaps (accepted): titles not
+    translated; expired/archived posts invisible to everyone in-app
+    (admin moderation feed covers pins only); no edit-after-post.
 
 ---
 
@@ -229,6 +249,9 @@ In `supabase/migrations/`:
   language bridge.
 - `0015` — `concierge_queries.user_id` nullable + `line_user_id` (LINE
   bot asker logging/caps). Applied to cloud July 6, 2026.
+- `0016` — `profiles.bio` (+ additive column grant per the 0012
+  pattern) + `board_posts` table with RLS (`user_role` claim) and
+  column-restricted INSERT/UPDATE grants.
 
 ---
 

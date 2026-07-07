@@ -38,6 +38,8 @@
     "displayPrefAvatarName": "Avatar and name",
     "instagram": "Instagram",
     "website": "Website",
+    "bio": "About you",
+    "bioHelp": "Tell the community a little about yourself — where you live, what you do.",
     "guidelinesAccept": "I agree to the community guidelines",
     "submit": "Continue"
   },
@@ -48,7 +50,9 @@
     "list": "List",
     "newPinToast": "{name} added a pin",
     "loadError": "The map couldn't load. Check your connection and refresh.",
-    "addPlaceTooltip": "Add a place not already on the map"
+    "addPlaceTooltip": "Add a place not already on the map",
+    "everyone": "Everyone",
+    "memberFilter": "Show pins from"
   },
   "pin": {
     "vouchedBy": "Vouched by",
@@ -91,7 +95,35 @@
     "pinsCount": "{count, plural, one {# pin} other {# pins}}",
     "vouchesCount": "{count, plural, one {# vouch} other {# vouches}}",
     "pinsHeading": "Pins",
-    "noPinsYet": "{name} hasn't pinned anything yet."
+    "noPinsYet": "{name} hasn't pinned anything yet.",
+    "viewOnMap": "See them on the map"
+  },
+  "board": {
+    "title": "Noticeboard",
+    "navTitle": "Board",
+    "subtitle": "Jobs, housing, things for sale, events — anything the community should know.",
+    "newPost": "New post",
+    "allCategories": "All",
+    "category_job": "Job",
+    "category_housing": "Housing",
+    "category_for_sale": "For sale / free",
+    "category_event": "Event",
+    "category_other": "Other",
+    "categoryLabel": "Category",
+    "titleLabel": "Title",
+    "titlePlaceholder": "What are you announcing?",
+    "bodyLabel": "Details",
+    "bodyPlaceholder": "Say more — include how to reach you.",
+    "expiryNote": "Posts disappear automatically after 30 days.",
+    "submit": "Post",
+    "posting": "Posting…",
+    "postFailed": "Couldn't post — try again.",
+    "requiredFields": "Add a title and details first.",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "removeFailed": "Couldn't remove that — try again.",
+    "empty": "Nothing here yet. Share something with the community!",
+    "formerMember": "Former member"
   },
   "activity": {
     "title": "Activity",

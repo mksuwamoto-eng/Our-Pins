@@ -14,7 +14,7 @@ export default async function EditProfilePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, avatar_path, instagram, website')
+    .select('display_name, avatar_path, instagram, website, bio')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -36,6 +36,7 @@ export default async function EditProfilePage() {
             displayName: profile?.display_name ?? '',
             instagram: profile?.instagram ?? '',
             website: profile?.website ?? '',
+            bio: profile?.bio ?? '',
             avatarPath: profile?.avatar_path ?? '',
             avatarUrl,
           }}

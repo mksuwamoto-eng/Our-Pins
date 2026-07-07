@@ -17,6 +17,7 @@ export interface Profile {
   display_pref: DisplayPref;
   instagram: string | null;
   website: string | null;
+  bio: string | null;
   is_member: boolean;
   role: Role;
   archived_at: string | null;
@@ -79,6 +80,21 @@ export interface Vouch {
   voucher_id: string;
   comment: string | null;
   translations: Translations;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BoardCategory = 'job' | 'housing' | 'for_sale' | 'event' | 'other';
+
+export interface BoardPost {
+  id: string;
+  created_by: string;
+  category: BoardCategory;
+  title: string;
+  body: string;
+  translations: Translations;
+  expires_at: string;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }

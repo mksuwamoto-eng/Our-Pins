@@ -15,19 +15,26 @@ import { FilterBar } from './FilterBar';
 
 const JAPAN_CENTER = { lat: 36.2048, lng: 138.2529 };
 
+export interface MemberOption {
+  id: string;
+  display_name: string;
+}
+
 interface Props {
   initialPins: Pin[];
   categories: Category[];
+  members: MemberOption[];
 }
 
-export function MapView({ initialPins, categories }: Props) {
+export function MapView({ initialPins, categories, members }: Props) {
   const t = useTranslations('map');
   const tCommon = useTranslations('common');
   const containerRef = useRef<HTMLDivElement>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const router = useRouter();
 
-  const { categoryIds, prefectures, search, viewport, setViewport } = useFiltersStore();
+  const { categoryIds, prefectures, authorIds, setAuthorIds, search, viewport, setViewport } =
+    useFiltersStore();
   const [pins, setPins] = useState<Pin[]>(initialPins);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   // Place selections (clicks on Google POIs that aren't pinned yet) live in
@@ -38,6 +45,16 @@ export function MapView({ initialPins, categories }: Props) {
   const [mapLoadFailed, setMapLoadFailed] = useState(false);
   const searchParams = useSearchParams();
   const pinIdFromUrl = searchParams.get('pin');
+  const authorFromUrl = searchParams.get('author');
+
+  // Member profile pages link here as /?author=<id> ("see X's pins on the
+  // map"). Absorb the param into the filter store, then clean the URL.
+  useEffect(() => {
+    if (!authorFromUrl) return;
+    setAuthorIds([authorFromUrl]);
+    routerRef.current.replace('/', { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorFromUrl]);
 
   const selection: SheetSelection = useMemo(() => {
     if (pinIdFromUrl) {
@@ -151,6 +168,7 @@ export function MapView({ initialPins, categories }: Props) {
     const filtered = pins.filter((p) => {
       if (categoryIds.length && !categoryIds.includes(p.category_id)) return false;
       if (prefectures.length && !prefectures.includes(p.prefecture)) return false;
+      if (authorIds.length && !authorIds.includes(p.created_by)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         // Note: substring match only. Japanese-script names won't match Romaji
@@ -177,7 +195,7 @@ export function MapView({ initialPins, categories }: Props) {
     return () => {
       clustererRef.current?.clearMarkers();
     };
-  }, [map, pins, categoryIds, prefectures, search, categoryById]);
+  }, [map, pins, categoryIds, prefectures, authorIds, search, categoryById]);
 
   function handlePinSaved(p: Pin) {
     setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
@@ -205,7 +223,7 @@ export function MapView({ initialPins, categories }: Props) {
           {mapLoadFailed ? t('loadError') : tCommon('loading')}
         </div>
       ) : null}
-      <FilterBar categories={categories} />
+      <FilterBar categories={categories} members={members} />
       <Concierge />
       <button
         onClick={() => router.push('/pins/new')}

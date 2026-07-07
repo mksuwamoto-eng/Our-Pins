@@ -12,6 +12,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const tSettings = await getTranslations('settings');
   const tActivity = await getTranslations('activity');
   const tMembers = await getTranslations('members');
+  const tBoard = await getTranslations('board');
 
   const { COMMUNITY_FILES_URL } = getServerEnv();
 
@@ -41,6 +42,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/activity">{tActivity('title')}</Link>
+          <Link href="/board">{tBoard('navTitle')}</Link>
           <Link href="/members">{tMembers('title')}</Link>
           {COMMUNITY_FILES_URL ? (
             <a

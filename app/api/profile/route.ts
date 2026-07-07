@@ -19,6 +19,12 @@ const editSchema = z.object({
     .transform((v) => (v && !/^https?:\/\//i.test(v) ? `https://${v}` : v))
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  bio: z
+    .string()
+    .trim()
+    .max(500, 'Bio is at most 500 characters')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
 });
 
 export async function PATCH(req: Request) {
@@ -55,6 +61,7 @@ export async function PATCH(req: Request) {
     display_name: v.displayName,
     instagram: v.instagram?.trim() || null,
     website: v.website?.trim() || null,
+    bio: v.bio?.trim() || null,
   };
   if (v.avatarPath) update.avatar_path = v.avatarPath;
 
