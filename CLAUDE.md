@@ -23,10 +23,10 @@ the first to vouch. Mako (the user) is the lead admin.
 ## Stack snapshot
 
 - Next.js 15.5.18 (App Router, RSC), React 19, TypeScript strict
-- `next.config.ts` has `typescript.ignoreBuildErrors: true` and
-  `eslint.ignoreDuringBuilds: true` as a deploy-day shortcut — type
-  errors still surface in the editor and in dev, but `next build`
-  won't block on them. Worth revisiting eventually.
+- `next.config.ts` build checks re-enabled July 8, 2026
+  (`ignoreBuildErrors`/`ignoreDuringBuilds` both false; the old
+  deploy-day flags were stale — typecheck, lint, and strict build all
+  passed with zero fixes when flipped).
 - Tailwind 4 (beta) with custom theme; new `--surface-subtle` variable
   for dark-mode-aware card backgrounds (washi-100 light / indigo-700
   dark)
@@ -205,9 +205,12 @@ In rough priority:
    future co-admins / forks of the codebase.
 6. **PWA icons**. Currently uses the GOJ logo for all sizes; works
    but not optimized. If Mako wants polish, generate 192/512/maskable.
-7. **CI workflow**. Text in README; needs to be committed as
-   `.github/workflows/ci.yml`. Bot lacked `workflow` scope at initial
-   setup; Mako can paste it manually.
+7. ~~CI workflow~~ — DONE (July 8, 2026): committed as
+   `.github/workflows/ci.yml` (typecheck, lint, vitest, strict build
+   on push-to-main + PRs; Playwright e2e deliberately excluded — needs
+   seeded staging Supabase). Mako's gh token now has `workflow` scope
+   (`gh auth refresh -s workflow`, done same day), so future workflow
+   edits push normally.
 8. ~~Localize new strings~~ — DONE (July 2026): all member-facing
    strings extracted to messages/{en,el}.json with Greek translations;
    admin panels intentionally left English. **July 8, 2026 follow-up**:
@@ -284,6 +287,11 @@ In `supabase/migrations/`:
   0016/0017 had been applied manually and were missing from the CLI
   ledger, so `supabase migration repair --status applied 0016 0017`
   was needed before `db push` would apply 0018.
+- `0019` — six professional/high-stakes categories (doctors-clinics,
+  dentists, lawyers-immigration, housing-real-estate, accountants-tax,
+  mental-health), sort_order 90–140, insert-only. Applied to cloud
+  July 8, 2026. Privacy trade-off consciously accepted: a public
+  vouch in `mental-health` discloses the voucher uses those services.
 
 ---
 
@@ -345,13 +353,21 @@ routes use it deliberately:
 
 ## Categories (current)
 
-11, seeded in `supabase/seed.sql`:
+17, seeded in `supabase/seed.sql`:
 
 Restaurants (10), Cafés (20), Bakeries & sweets (25), Bars & drinks
 (28), Greek-product shops (30), Shopping (35), Weekend trips (40),
-Things to do (50), Onsen (60), Hiking (70), Family-friendly (80).
+Things to do (50), Onsen (60), Hiking (70), Family-friendly (80),
+Doctors & clinics (90), Dentists (100), Lawyers & immigration (110),
+Housing & real estate (120), Accountants & tax (130), Mental health &
+therapy (140) — the last six added by migration 0019 (July 8, 2026).
 
 Frozen in v1 — no admin CRUD UI. To change: add a migration.
+
+Deliberately NOT built (July 8, 2026): per-voucher vouch counts next
+to names in the PinSheet vouch list — it's a soft credibility-ranking
+signal and a pending product decision; counts already show on
+/members/[id] and the members grid.
 
 ---
 
@@ -394,8 +410,8 @@ src/
 - **Next 15 disallows `cookies().set()` in Server Components**. Use a
   Route Handler or Server Action instead.
 - **`next build` runs strict TS and lint by default**. `pnpm dev`
-  doesn't. We've set `typescript.ignoreBuildErrors: true` to unblock
-  deploys; type errors live on but don't gate prod.
+  doesn't. The ignore-flags that once bypassed this were removed
+  July 8, 2026 — type/lint errors now gate both `pnpm build` and CI.
 - **Postgres column grants vs RLS**: column-level REVOKE is a no-op
   if a broader table-level GRANT exists. Always revoke at the higher
   level first, then re-grant the specific columns you want.
