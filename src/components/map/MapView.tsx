@@ -5,13 +5,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useFiltersStore } from '@/stores/filters';
-import { Concierge } from '@/components/concierge/Concierge';
 import { useRealtimePins } from '@/lib/supabase/realtime';
 import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category, Pin } from '@/lib/supabase/types';
 import { PinSheet, type SheetSelection } from './PinSheet';
 import { FilterBar } from './FilterBar';
+
+// The concierge is an on-demand chat FAB — keep its code (and its deps) out of
+// the map's initial bundle. It's a client-only overlay, so no SSR needed.
+const Concierge = dynamic(
+  () => import('@/components/concierge/Concierge').then((m) => m.Concierge),
+  { ssr: false },
+);
 
 const JAPAN_CENTER = { lat: 36.2048, lng: 138.2529 };
 

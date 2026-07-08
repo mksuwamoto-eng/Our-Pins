@@ -24,13 +24,13 @@ function isPublic(pathname: string) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const { response, supabase } = await updateSession(request);
+  // updateSession() already called getUser() (a network round-trip) to refresh
+  // the session cookie — reuse that user instead of calling getUser() a second
+  // time. Saves one auth round-trip on every authenticated navigation.
+  const { response, supabase, user } = await updateSession(request);
 
   if (isPublic(pathname)) return response;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     const signInUrl = new URL('/sign-in', request.url);
     // Keep the query string: LINE-bot deep-links arrive as /?pin=<id> and the
