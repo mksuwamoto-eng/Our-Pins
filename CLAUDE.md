@@ -210,19 +210,25 @@ In rough priority:
    setup; Mako can paste it manually.
 8. ~~Localize new strings~~ — DONE (July 2026): all member-facing
    strings extracted to messages/{en,el}.json with Greek translations;
-   admin panels intentionally left English. Also: backfill
-   `translations` for pre-existing pins/vouches (script not written).
+   admin panels intentionally left English. **July 8, 2026 follow-up**:
+   category labels now localized too (new `categories` namespace keyed
+   by DB slug + `src/lib/i18n/category.ts` helper, wired into FilterBar,
+   PinSheet, and the 3 pin forms), and relative timestamps now pass the
+   active locale in PinSheet + activity. Still open: backfill
+   `translations` for pre-existing pins/vouches (script not written);
+   board post *titles* still not translated; Google opening-hours text
+   still comes back in the Maps-loader language.
 9. **Mobile UX pass**. App is shipped but never tested on a real iOS
    device. Bottom sheets / virtual-keyboard handling / tap targets
    should be sanity-checked on iPhone. (Android/Pixel pass done July 8,
    2026 via emulated viewport: header + filter chips fixed.)
-10. **`pins.google_place_id` has NO unique constraint** (found July 8,
-   2026: two identical Truffle Bakery pins; dup archived). The
-   POST /api/pins 409 handling assumes a 23505 that can never fire,
-   and MapView's place-click lookup silently hides one duplicate.
-   Fix: migration with a partial unique index
+10. ~~**`pins.google_place_id` has NO unique constraint**~~ — FIXED
+   (July 8, 2026, migration 0018). Partial unique index
    (`where google_place_id is not null and archived_at is null`)
-   after checking prod for remaining dups.
+   applied to cloud after verifying 0 active dups. The POST /api/pins
+   23505 branch can now actually fire, and `/api/pins/by-place` was
+   changed to `order+limit(1)` so it degrades gracefully rather than
+   500-ing if two active pins ever share a place id.
 
 ---
 
@@ -271,6 +277,13 @@ In `supabase/migrations/`:
   also un-archive their own row via direct API (no UI), so a
   determined member could undo an admin archive of their own content
   — accepted at this trust level.
+- `0018` — partial unique index `pins_place_active_uniq` on
+  `pins.google_place_id where google_place_id is not null and
+  archived_at is null`. Closes the duplicate-pin gap (old TODO #10).
+  Applied to cloud July 8, 2026 after verifying 0 active dups. Note:
+  0016/0017 had been applied manually and were missing from the CLI
+  ledger, so `supabase migration repair --status applied 0016 0017`
+  was needed before `db push` would apply 0018.
 
 ---
 
@@ -290,6 +303,30 @@ fixed:
    onboarded_at** — same root cause as #1; fixed by 0012.
 4. **pins_update_owner allowed non-members to mutate their old
    pins** — fixed by 0011 (added `is_member='true'` check).
+
+**Second audit (July 8, 2026)** — adversarial pass against the live
+prod DB with minted per-role JWTs. All four findings above re-verified
+CLOSED (self-promote → 42501, accept_invite mismatch → exception,
+non-member pin edit → 0 rows, cross-tenant PII read blocked). No new
+RLS/privilege holes. Robustness/consistency fixes shipped (branch
+`claude/audit-fixes-2026-07-08`, deployed):
+- `/api/profile` PATCH lacked the Instagram charset regex onboarding
+  has → DB CHECK 500 that leaked the raw constraint name. Added regex +
+  generic errors.
+- `website http://…` passed Zod but violated the https-only DB CHECK →
+  now normalized to `https://` in both onboarding + profile schemas.
+- `/api/admin/*` is NOT covered by the middleware `/admin` gate (the
+  check is `startsWith('/admin')`); any member could POST there and get
+  a 500 from RLS. Added explicit admin checks (403) on the invites
+  POST + DELETE.
+- Raw Postgres error messages were returned verbatim from several
+  routes (profile, onboarding, account/delete, admin/invites,
+  by-place) → now generic + `console.error` server-side.
+- display_name uniqueness check escaped LIKE wildcards; UUID guards on
+  pins routes so a bad id is 404 not a 22P02 500.
+- Members-grid vouch count matched to the profile page (excludes
+  archived-pin vouches).
+Full write-up was kept in the session scratchpad, not the repo.
 
 **Important architecture note from the audit:** the admin client
 (service_role) bypasses RLS *and* column grants, which is why several
@@ -401,6 +438,27 @@ src/
 - **After flipping `is_member` or `role`**, the user must sign out and
   back in for the JWT to refresh. Force via
   `supabase.auth.signOut(userId)` from the admin client if needed.
+- **Vaul drawer: put `overflow-y-auto` on an INNER wrapper, never on
+  `Drawer.Content`** (fixed July 8, 2026). Vaul injects an opaque
+  `::after` overscroll mask at `top:100%` of Drawer.Content; if Content
+  is itself the scroll container and its body is taller than the sheet,
+  that mask lands mid-content and paints OVER lower elements — it was
+  covering the "Save & vouch" submit button on the tall place-add sheet
+  (invisible + unclickable, only on the tallest sheet). Keep
+  Drawer.Content non-scrolling; wrap the body in
+  `<div className="min-h-0 overflow-y-auto p-6">`. Absolute buttons stay
+  pinned to Content as a bonus.
+- **Map viewport must be read from the store at map-CREATION time, not
+  the render closure** (fixed July 8, 2026). MapView's init effect read
+  the `viewport` value captured at mount — before zustand-persist
+  rehydrated localStorage — so the map opened at the Japan-wide default
+  and the `idle` listener then wrote that default back, clobbering the
+  saved position on every load. Read `useFiltersStore.getState().viewport`
+  inside the async loader callback instead (post-hydration by then).
+- **Maps JS API key is referrer-locked to `our-pins.vercel.app`** — the
+  map will NOT load on localhost or Vercel preview URLs, so map/sheet
+  changes can only be verified on prod (or after temporarily allowlisting
+  the URL on the Google Cloud key). Non-map changes verify fine locally.
 
 ---
 
