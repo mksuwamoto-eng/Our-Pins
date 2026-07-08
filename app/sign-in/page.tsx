@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { publicEnv } from '@/lib/env';
@@ -30,10 +31,12 @@ export default async function SignInPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src="/icons/goj-logo.png"
         alt=""
+        width={80}
+        height={80}
+        priority
         className="mb-6 h-20 w-20 self-center rounded-2xl shadow-sm"
       />
       <h1 className="mb-2 text-center font-serif text-3xl text-[var(--fg)]">{t('signInTitle')}</h1>
