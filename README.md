@@ -98,10 +98,8 @@ your domain.
 
 ## CI workflow
 
-A GitHub Actions workflow is documented below — paste it into
-`.github/workflows/ci.yml` once you've forked the repo (the initial scaffold
-omits it because the bot account that pushed the first commit doesn't have
-GitHub `workflow` scope).
+Committed as `.github/workflows/ci.yml` (reproduced below). Pushing changes
+to it requires GitHub `workflow` scope on the pushing account.
 
 ```yaml
 name: CI
