@@ -6,6 +6,7 @@ import {
   upsertUserFromLine,
 } from '@/lib/auth/session';
 import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
+import { safeNext } from '@/lib/auth/safe-next';
 import { publicEnv } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   let inviteToken: string | null = null;
   try {
     const payload = JSON.parse(Buffer.from(state.split('.')[1] ?? '', 'base64url').toString('utf8'));
-    if (typeof payload.next === 'string') next = payload.next;
+    if (typeof payload.next === 'string') next = safeNext(payload.next);
     if (typeof payload.invite === 'string') inviteToken = payload.invite;
   } catch {
     // fall through with defaults
