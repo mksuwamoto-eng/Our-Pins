@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
 import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
+import { safeNext } from '@/lib/auth/safe-next';
 import { publicEnv } from '@/lib/env';
 
 // Mirrors app/api/auth/google/callback/route.ts. Magic link emails point here
@@ -9,7 +10,7 @@ import { publicEnv } from '@/lib/env';
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const next = url.searchParams.get('next') ?? '/';
+  const next = safeNext(url.searchParams.get('next'));
   const inviteToken = url.searchParams.get('invite');
 
   if (!code) {
