@@ -36,7 +36,11 @@ export async function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-        <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap font-serif text-xl">
+        <Link
+          href="/"
+          aria-label={t('name')}
+          className="flex shrink-0 items-center gap-2 whitespace-nowrap font-serif text-xl"
+        >
           <Image
             src="/icons/goj-logo.png"
             alt=""
