@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { AppShell } from '@/components/layout/AppShell';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { relativeTime } from '@/lib/time';
@@ -17,6 +17,7 @@ interface ActivityEvent {
 }
 
 export default async function ActivityPage() {
+  const locale = await getLocale();
   const supabase = await createSupabaseServerClient();
   const t = await getTranslations('activity');
 
@@ -129,7 +130,7 @@ export default async function ActivityPage() {
                         <span className="font-medium">{e.pinName}</span>
                       </p>
                       <p className="text-xs text-[var(--muted)]">
-                        {relativeTime(e.createdAt)}
+                        {relativeTime(e.createdAt, locale)}
                       </p>
                     </div>
                   </Link>

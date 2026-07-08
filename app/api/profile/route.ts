@@ -10,13 +10,20 @@ const editSchema = z.object({
     .trim()
     .max(30, 'Instagram handle is at most 30 characters')
     .transform((v) => v.replace(/^@/, ''))
+    // Must match the DB CHECK on profiles.instagram, or the save 500s at the
+    // DB after passing app validation (onboarding enforces the same regex).
+    .refine((v) => /^[a-zA-Z0-9._]{1,30}$/.test(v), {
+      message: 'Instagram handles use letters, numbers, dots and underscores (max 30)',
+    })
     .optional()
     .or(z.literal('').transform(() => undefined)),
   website: z
     .string()
     .trim()
     .max(200)
-    .transform((v) => (v && !/^https?:\/\//i.test(v) ? `https://${v}` : v))
+    // DB CHECK is https-only; upgrade http:// (and add a scheme to bare hosts)
+    // so a valid-looking URL can't 500 at the DB.
+    .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
     .optional()
     .or(z.literal('').transform(() => undefined)),
   bio: z
@@ -44,10 +51,12 @@ export async function PATCH(req: Request) {
   }
   const v = parsed.data;
 
+  // Escape LIKE wildcards so a name with % or _ is matched literally.
+  const namePattern = v.displayName.replace(/[\\%_]/g, '\\$&');
   const { data: clash } = await supabase
     .from('profiles')
     .select('id')
-    .ilike('display_name', v.displayName)
+    .ilike('display_name', namePattern)
     .neq('id', user.id)
     .maybeSingle();
   if (clash) {
@@ -66,7 +75,10 @@ export async function PATCH(req: Request) {
   if (v.avatarPath) update.avatar_path = v.avatarPath;
 
   const { error } = await supabase.from('profiles').update(update).eq('id', user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('profile update failed:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

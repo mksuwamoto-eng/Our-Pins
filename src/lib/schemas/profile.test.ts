@@ -17,13 +17,17 @@ describe('onboardingSchema', () => {
     expect(onboardingSchema.safeParse({ ...valid, acceptedGuidelines: false }).success).toBe(false);
   });
 
-  it('prepends https:// to a bare website and keeps an explicit scheme', () => {
+  it('prepends https:// to a bare website and upgrades http:// to https://', () => {
     const bare = onboardingSchema.safeParse({ ...valid, website: 'example.com' });
     expect(bare.success).toBe(true);
     if (bare.success) expect(bare.data.website).toBe('https://example.com');
-    expect(
-      onboardingSchema.safeParse({ ...valid, website: 'http://example.com' }).success,
-    ).toBe(true);
+    // http:// must be upgraded — the DB CHECK only accepts ^https://.
+    const http = onboardingSchema.safeParse({ ...valid, website: 'http://example.com' });
+    expect(http.success).toBe(true);
+    if (http.success) expect(http.data.website).toBe('https://example.com');
+    // an already-https URL is left intact.
+    const https = onboardingSchema.safeParse({ ...valid, website: 'https://example.com' });
+    if (https.success) expect(https.data.website).toBe('https://example.com');
   });
 
   it('rejects an instagram handle with spaces', () => {

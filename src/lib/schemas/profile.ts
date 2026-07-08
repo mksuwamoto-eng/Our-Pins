@@ -26,7 +26,10 @@ export const onboardingSchema = z.object({
     .string()
     .trim()
     .max(200)
-    .transform((v) => (v && !/^https?:\/\//i.test(v) ? `https://${v}` : v))
+    // DB CHECK is `website ~* '^https://'` (https only). A bare host gets a
+    // scheme; an explicit http:// is upgraded to https:// so it can't 500 at
+    // the DB after passing validation.
+    .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
     .optional()
     .or(z.literal('').transform(() => undefined)),
   acceptedGuidelines: z.literal(true, {

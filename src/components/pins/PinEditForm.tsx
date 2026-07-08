@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Category, Pin } from '@/lib/supabase/types';
+import { categoryLabel } from '@/lib/i18n/category';
 
 interface Props {
   pin: Pin;
@@ -15,6 +16,7 @@ interface Props {
 export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: Props) {
   const t = useTranslations('pin');
   const tCommon = useTranslations('common');
+  const tc = useTranslations('categories');
   const [categoryId, setCategoryId] = useState(pin.category_id);
   const [vouchNote, setVouchNote] = useState(pin.vouch_note);
   const [busy, setBusy] = useState(false);
@@ -65,7 +67,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
         >
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.label}
+              {categoryLabel(tc, c)}
             </option>
           ))}
         </select>

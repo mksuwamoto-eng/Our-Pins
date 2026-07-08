@@ -4,10 +4,12 @@ import { useTranslations } from 'next-intl';
 import { useFiltersStore } from '@/stores/filters';
 import type { Category } from '@/lib/supabase/types';
 import type { MemberOption } from './MapView';
+import { categoryLabel } from '@/lib/i18n/category';
 import { cn } from '@/lib/utils';
 
 export function FilterBar({ categories, members }: { categories: Category[]; members: MemberOption[] }) {
   const t = useTranslations('map');
+  const tc = useTranslations('categories');
   const { categoryIds, setCategoryIds, authorIds, setAuthorIds, search, setSearch } = useFiltersStore();
 
   function toggle(id: string) {
@@ -59,7 +61,7 @@ export function FilterBar({ categories, members }: { categories: Category[]; mem
                   : 'border-[var(--border)] bg-[var(--surface)]/95 text-[var(--fg)]',
               )}
             >
-              {c.label}
+              {categoryLabel(tc, c)}
             </button>
           );
         })}

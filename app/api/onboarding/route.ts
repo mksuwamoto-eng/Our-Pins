@@ -17,10 +17,13 @@ export async function POST(req: Request) {
   const v = parsed.data;
 
   // Check display_name is not already taken by another member (case-insensitive).
+  // Escape LIKE wildcards so a name containing % or _ is matched literally,
+  // not as a pattern (otherwise "M_ko" would falsely clash with "Mako").
+  const namePattern = v.displayName.replace(/[\\%_]/g, '\\$&');
   const { data: clash } = await supabase
     .from('profiles')
     .select('id')
-    .ilike('display_name', v.displayName)
+    .ilike('display_name', namePattern)
     .neq('id', user.id)
     .maybeSingle();
   if (clash) {
@@ -50,7 +53,10 @@ export async function POST(req: Request) {
     .from('profiles')
     .update(update)
     .eq('id', user.id);
-  if (upProfileErr) return NextResponse.json({ error: upProfileErr.message }, { status: 500 });
+  if (upProfileErr) {
+    console.error('onboarding profile update failed:', upProfileErr);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
 
   if (v.realName) {
     // private_profiles has no INSERT policy by design (same as profiles);
@@ -58,7 +64,10 @@ export async function POST(req: Request) {
     const { error: upPrivErr } = await admin
       .from('private_profiles')
       .upsert({ id: user.id, real_name: v.realName, email: v.email ?? null }, { onConflict: 'id' });
-    if (upPrivErr) return NextResponse.json({ error: upPrivErr.message }, { status: 500 });
+    if (upPrivErr) {
+      console.error('onboarding private_profiles upsert failed:', upPrivErr);
+      return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    }
   }
 
   // Force a token refresh so the new `onboarded` claim takes effect immediately

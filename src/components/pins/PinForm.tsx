@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category } from '@/lib/supabase/types';
 import { placeToPinFields } from '@/lib/maps/places';
+import { categoryLabel } from '@/lib/i18n/category';
 
 interface FormValues {
   vouch_note: string;
@@ -16,6 +17,7 @@ interface FormValues {
 export function PinForm({ categories }: { categories: Category[] }) {
   const t = useTranslations('pin');
   const tCommon = useTranslations('common');
+  const tc = useTranslations('categories');
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [place, setPlace] = useState<ReturnType<typeof placeToPinFields> | null>(null);
@@ -105,7 +107,7 @@ export function PinForm({ categories }: { categories: Category[] }) {
         >
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.label}
+              {categoryLabel(tc, c)}
             </option>
           ))}
         </select>
