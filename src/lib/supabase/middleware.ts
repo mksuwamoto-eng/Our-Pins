@@ -26,6 +26,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
-  return { response, supabase };
+  // getUser() is a network round-trip to the Supabase Auth server; it also
+  // refreshes the session cookie (via the setAll callback) when the token is
+  // near expiry. Return the user so the caller doesn't have to call it again.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return { response, supabase, user };
 }

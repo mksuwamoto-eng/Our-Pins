@@ -2,7 +2,8 @@
 
 import { Drawer } from 'vaul';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { Check, Pencil, Share2, X } from 'lucide-react';
 import { getMapsLoader } from '@/lib/maps/loader';
@@ -144,6 +145,48 @@ async function fetchPlaceDetails(placeId: string): Promise<PlaceDetails | null> 
   }
 }
 
+// Stable empty defaults so cached queries return the same reference every
+// render (keeps useMemo/effects from re-running on identity churn).
+const EMPTY_VOUCHES: Vouch[] = [];
+const EMPTY_VOUCHER_DATA: {
+  vouchers: Map<string, Profile>;
+  avatarUrls: Map<string, string>;
+} = { vouchers: new Map(), avatarUrls: new Map() };
+
+async function fetchVouches(pinId: string): Promise<Vouch[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data } = await supabase
+    .from('vouches')
+    .select('*')
+    .eq('pin_id', pinId)
+    .order('created_at', { ascending: false });
+  return (data ?? []) as Vouch[];
+}
+
+async function fetchVoucherProfiles(
+  ids: string[],
+): Promise<{ vouchers: Map<string, Profile>; avatarUrls: Map<string, string> }> {
+  const supabase = getSupabaseBrowserClient();
+  const { data: profs } = await supabase.from('profiles').select('*').in('id', ids);
+  const profiles = (profs ?? []) as Profile[];
+  const vouchers = new Map<string, Profile>();
+  for (const p of profiles) vouchers.set(p.id, p);
+
+  const paths = profiles
+    .map((p) => p.avatar_path)
+    .filter((p): p is string => typeof p === 'string' && !p.includes('_pending'));
+  const avatarUrls = new Map<string, string>();
+  if (paths.length) {
+    const { data: signed } = await supabase.storage
+      .from('pin-photos')
+      .createSignedUrls(paths, 3600);
+    for (const s of signed ?? []) {
+      if (s.signedUrl && s.path) avatarUrls.set(s.path, s.signedUrl);
+    }
+  }
+  return { vouchers, avatarUrls };
+}
+
 function ExistingPinView({
   pin,
   categories,
@@ -159,15 +202,48 @@ function ExistingPinView({
   const tc = useTranslations('categories');
   const locale = useLocale();
   const category = categories.find((c) => c.id === pin.category_id) ?? null;
-  const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
-  const [vouches, setVouches] = useState<Vouch[]>([]);
-  const [vouchers, setVouchers] = useState<Map<string, Profile>>(new Map());
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
-  const [refreshKey, setRefreshKey] = useState(0);
 
+  // Live vouch INSERT/UPDATE/DELETE stream into the ['vouches', pin.id] cache
+  // (see useRealtimeVouches); the query below reads that same key, so vouches
+  // added by other members now appear live without a manual refresh.
   useRealtimeVouches(pin.id);
+
+  // Google Place details rarely change and cost money per fetch — cache hard,
+  // and share the cache with NewPlaceView via the same ['place-details', <id>]
+  // key so pinning a just-viewed place reuses the already-fetched details.
+  const { data: placeDetails = null } = useQuery({
+    queryKey: ['place-details', pin.google_place_id],
+    queryFn: () => fetchPlaceDetails(pin.google_place_id as string),
+    enabled: !!pin.google_place_id,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+  });
+
+  const { data: vouches = EMPTY_VOUCHES } = useQuery({
+    queryKey: ['vouches', pin.id],
+    queryFn: () => fetchVouches(pin.id),
+    staleTime: 60_000,
+  });
+
+  const voucherIds = useMemo(
+    () => Array.from(new Set(vouches.map((v) => v.voucher_id))).sort(),
+    [vouches],
+  );
+
+  // Profiles + signed avatar URLs for the current voucher set. Keyed by the id
+  // list so it only refetches when the set of vouchers actually changes.
+  const { data: voucherData = EMPTY_VOUCHER_DATA } = useQuery({
+    queryKey: ['voucher-profiles', voucherIds],
+    queryFn: () => fetchVoucherProfiles(voucherIds),
+    enabled: voucherIds.length > 0,
+    staleTime: 5 * 60_000,
+  });
+  const vouchers = voucherData.vouchers;
+  const avatarUrls = voucherData.avatarUrls;
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -193,59 +269,10 @@ function ExistingPinView({
 
   const canEdit = currentUserId === pin.created_by || currentUserRole === 'admin';
 
-  useEffect(() => {
-    if (!pin.google_place_id) return;
-    let cancelled = false;
-    fetchPlaceDetails(pin.google_place_id).then((d) => {
-      if (!cancelled) setPlaceDetails(d);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [pin.google_place_id]);
-
-  const [avatarUrls, setAvatarUrls] = useState<Map<string, string>>(new Map());
-
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = getSupabaseBrowserClient();
-    supabase
-      .from('vouches')
-      .select('*')
-      .eq('pin_id', pin.id)
-      .order('created_at', { ascending: false })
-      .then(async ({ data }: { data: Vouch[] | null }) => {
-        if (cancelled || !data) return;
-        setVouches(data);
-        const ids = Array.from(new Set(data.map((v) => v.voucher_id)));
-        if (!ids.length) return;
-        const { data: profs } = await supabase.from('profiles').select('*').in('id', ids);
-        if (cancelled || !profs) return;
-        const profiles = profs as Profile[];
-        const map = new Map<string, Profile>();
-        for (const p of profiles) map.set(p.id, p);
-        setVouchers(map);
-
-        const paths = profiles
-          .map((p) => p.avatar_path)
-          .filter((p): p is string => typeof p === 'string' && !p.includes('_pending'));
-        if (!paths.length) return;
-        const { data: signed } = await supabase.storage
-          .from('pin-photos')
-          .createSignedUrls(paths, 3600);
-        if (cancelled || !signed) return;
-        const urlMap = new Map<string, string>();
-        for (const s of signed) {
-          if (s.signedUrl && s.path) urlMap.set(s.path, s.signedUrl);
-        }
-        setAvatarUrls(urlMap);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [pin.id, refreshKey]);
-
-  const otherVouches = vouches.filter((v) => v.voucher_id !== pin.created_by);
+  const otherVouches = useMemo(
+    () => vouches.filter((v) => v.voucher_id !== pin.created_by),
+    [vouches, pin.created_by],
+  );
 
   if (editing) {
     return (
@@ -403,7 +430,10 @@ function ExistingPinView({
 
         {/* Creators don't vouch-toggle their own pin — their note is the vouch. */}
         {currentUserId !== pin.created_by ? (
-          <VouchPanel pinId={pin.id} onChange={() => setRefreshKey((k) => k + 1)} />
+          <VouchPanel
+            pinId={pin.id}
+            onChange={() => queryClient.invalidateQueries({ queryKey: ['vouches', pin.id] })}
+          />
         ) : null}
       </div>
     </>
@@ -458,46 +488,39 @@ function NewPlaceView({
 }) {
   const tPin = useTranslations('pin');
   const tCommon = useTranslations('common');
-  const [place, setPlace] = useState<PlaceDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [existingPin, setExistingPin] = useState<Pin | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setExistingPin(null);
-    setPlace(null);
+  // Is this Google POI already a community pin? Runs in parallel with the
+  // place-details fetch below; both are cached so re-opening the same place
+  // (or reopening after adding it) is instant.
+  const { data: existingPin = null, isLoading: byPlaceLoading } = useQuery({
+    queryKey: ['pin-by-place', placeId],
+    queryFn: async () => {
+      const r = await fetch(`/api/pins/by-place/${encodeURIComponent(placeId)}`);
+      return r.ok ? ((await r.json()) as Pin | null) : null;
+    },
+    staleTime: 60_000,
+  });
 
-    fetch(`/api/pins/by-place/${encodeURIComponent(placeId)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((found: Pin | null) => {
-        if (cancelled) return;
-        if (found) setExistingPin(found);
-      })
-      .catch(() => {});
+  const { data: place = null, isLoading: placeLoading } = useQuery({
+    queryKey: ['place-details', placeId],
+    queryFn: () => fetchPlaceDetails(placeId),
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+  });
 
-    fetchPlaceDetails(placeId).then((d) => {
-      if (cancelled) return;
-      setPlace(d);
-      setLoading(false);
-    });
+  // Already pinned → show the pin immediately; ExistingPinView fetches its own
+  // (cache-shared) place details, so there's no need to wait on ours first.
+  if (existingPin) {
+    return <ExistingPinView pin={existingPin} categories={categories} />;
+  }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [placeId]);
-
-  if (loading) {
+  if (byPlaceLoading || placeLoading) {
     return (
       <>
         <Drawer.Title className="font-serif text-xl">{tCommon('loading')}</Drawer.Title>
         <p className="mt-4 text-sm text-[var(--muted)]">{tPin('fetchingPlace')}</p>
       </>
     );
-  }
-
-  if (existingPin) {
-    return <ExistingPinView pin={existingPin} categories={categories} />;
   }
 
   // fetchPlaceDetails resolved null — Google lookup failed. Without this
