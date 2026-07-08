@@ -141,7 +141,13 @@
     "things-to-do": "Things to do",
     "onsen": "Onsen",
     "hiking": "Hiking",
-    "family": "Family-friendly"
+    "family": "Family-friendly",
+    "doctors-clinics": "Doctors & clinics",
+    "dentists": "Dentists",
+    "lawyers-immigration": "Lawyers & immigration",
+    "housing-real-estate": "Housing & real estate",
+    "accountants-tax": "Accountants & tax",
+    "mental-health": "Mental health & therapy"
   },
   "activity": {
     "title": "Activity",

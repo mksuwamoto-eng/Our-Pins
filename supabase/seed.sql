@@ -15,7 +15,13 @@ insert into public.categories (slug, label, icon, color, sort_order) values
   ('things-to-do',    'Things to do',        'Sparkles',        '#6e8c4f', 50),
   ('onsen',           'Onsen',               'Droplet',         '#8593c2', 60),
   ('hiking',          'Hiking',              'Mountain',        '#41552d', 70),
-  ('family',          'Family-friendly',     'Users',           '#e9b29e', 80)
+  ('family',          'Family-friendly',     'Users',           '#e9b29e', 80),
+  ('doctors-clinics',     'Doctors & clinics',       'Stethoscope',    '#a05252', 90),
+  ('dentists',            'Dentists',                'Smile',          '#8ea3cf', 100),
+  ('lawyers-immigration', 'Lawyers & immigration',   'Scale',          '#4a3d72', 110),
+  ('housing-real-estate', 'Housing & real estate',   'KeyRound',       '#8c6f4f', 120),
+  ('accountants-tax',     'Accountants & tax',       'Calculator',     '#46618c', 130),
+  ('mental-health',       'Mental health & therapy', 'HeartHandshake', '#7d9b8a', 140)
 on conflict (slug) do nothing;
 
 -- ============================================================

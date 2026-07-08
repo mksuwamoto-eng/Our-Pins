@@ -141,7 +141,13 @@
     "things-to-do": "Πράγματα να κάνεις",
     "onsen": "Ονσέν",
     "hiking": "Πεζοπορία",
-    "family": "Για οικογένειες"
+    "family": "Για οικογένειες",
+    "doctors-clinics": "Γιατροί & κλινικές",
+    "dentists": "Οδοντίατροι",
+    "lawyers-immigration": "Δικηγόροι & μετανάστευση",
+    "housing-real-estate": "Στέγαση & ακίνητα",
+    "accountants-tax": "Λογιστές & φορολογικά",
+    "mental-health": "Ψυχική υγεία & ψυχοθεραπεία"
   },
   "activity": {
     "title": "Δραστηριότητα",
