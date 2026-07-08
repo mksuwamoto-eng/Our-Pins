@@ -3,13 +3,14 @@
 import { Drawer } from 'vaul';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Check, Pencil, Share2, X } from 'lucide-react';
 import { getMapsLoader } from '@/lib/maps/loader';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { useRealtimeVouches } from '@/lib/supabase/realtime';
 import type { Category, Pin, Vouch, Profile } from '@/lib/supabase/types';
 import { relativeTime } from '@/lib/time';
+import { categoryLabel } from '@/lib/i18n/category';
 import { LocalizedText } from '@/components/i18n/LocalizedText';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { InlineAddPinForm } from '@/components/pins/InlineAddPinForm';
@@ -44,7 +45,14 @@ export function PinSheet({
     <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-30 bg-black/30" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col overflow-y-auto rounded-t-2xl bg-[var(--surface)] p-6 outline-none">
+        {/* Scroll lives on the inner wrapper, NOT on Drawer.Content. Vaul injects
+            an opaque `::after` overscroll mask at `top:100%` of Drawer.Content;
+            if Content is the scroll container, that mask lands mid-content (once
+            the body is taller than the sheet) and paints over the submit button,
+            making it invisible + unclickable. Keeping Content non-scrolling
+            parks the mask below the content where it belongs. The absolute
+            buttons stay pinned to Content so they don't scroll away. */}
+        <Drawer.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[88vh] flex-col rounded-t-2xl bg-[var(--surface)] outline-none">
           {selection?.kind === 'pin' ? <ShareButton pinId={selection.pin.id} /> : null}
           <Drawer.Close
             aria-label={tCommon('close')}
@@ -52,24 +60,26 @@ export function PinSheet({
           >
             <X className="h-5 w-5" />
           </Drawer.Close>
-          {selection?.kind === 'pin' ? (
-            <ExistingPinView
-              pin={selection.pin}
-              categories={categories}
-              onDeleted={(pinId) => {
-                onPinDeleted?.(pinId);
-                onClose();
-              }}
-              onUpdated={(p) => onPinUpdated?.(p)}
-            />
-          ) : null}
-          {selection?.kind === 'place' ? (
-            <NewPlaceView
-              placeId={selection.placeId}
-              categories={categories}
-              onSaved={onPinSaved}
-            />
-          ) : null}
+          <div className="min-h-0 overflow-y-auto p-6">
+            {selection?.kind === 'pin' ? (
+              <ExistingPinView
+                pin={selection.pin}
+                categories={categories}
+                onDeleted={(pinId) => {
+                  onPinDeleted?.(pinId);
+                  onClose();
+                }}
+                onUpdated={(p) => onPinUpdated?.(p)}
+              />
+            ) : null}
+            {selection?.kind === 'place' ? (
+              <NewPlaceView
+                placeId={selection.placeId}
+                categories={categories}
+                onSaved={onPinSaved}
+              />
+            ) : null}
+          </div>
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
@@ -146,6 +156,8 @@ function ExistingPinView({
   onUpdated?: (pin: Pin) => void;
 }) {
   const t = useTranslations('pin');
+  const tc = useTranslations('categories');
+  const locale = useLocale();
   const category = categories.find((c) => c.id === pin.category_id) ?? null;
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [vouches, setVouches] = useState<Vouch[]>([]);
@@ -280,7 +292,7 @@ function ExistingPinView({
             className="inline-block rounded-full px-2 py-0.5 text-xs"
             style={{ background: category.color, color: 'white' }}
           >
-            {category.label}
+            {categoryLabel(tc, category)}
           </span>
         ) : null}
         <span className="text-sm text-[var(--muted)]">{pin.address}</span>
@@ -329,7 +341,7 @@ function ExistingPinView({
                   </Link>{' '}
                   <span className="text-xs font-normal text-[var(--muted)]">— {t('pinned')}</span>
                 </span>
-                <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at)}</time>
+                <time className="text-xs text-[var(--muted)]">{relativeTime(pin.created_at, locale)}</time>
               </div>
               <LocalizedText
                 original={pin.vouch_note}
@@ -369,7 +381,7 @@ function ExistingPinView({
                       </Link>
                     </span>
                     <time className="text-xs text-[var(--muted)]">
-                      {relativeTime(v.created_at)}
+                      {relativeTime(v.created_at, locale)}
                     </time>
                   </div>
                   {v.comment ? (

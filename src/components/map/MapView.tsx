@@ -33,7 +33,7 @@ export function MapView({ initialPins, categories, members }: Props) {
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const router = useRouter();
 
-  const { categoryIds, prefectures, authorIds, setAuthorIds, search, viewport, setViewport } =
+  const { categoryIds, prefectures, authorIds, setAuthorIds, search, setViewport } =
     useFiltersStore();
   const [pins, setPins] = useState<Pin[]>(initialPins);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -105,9 +105,16 @@ export function MapView({ initialPins, categories, members }: Props) {
     let active = true;
     getMapsLoader().load().then((google) => {
       if (!active || !containerRef.current) return;
+      // Read the LIVE persisted viewport here (inside the async loader
+      // callback), not the render-time `viewport` closure. The closure was
+      // captured at mount — before zustand-persist rehydrated from
+      // localStorage — so it held the Japan-wide default; the map opened there
+      // and the idle listener below then wrote that default back, clobbering
+      // the user's saved position. getState() is post-hydration by now.
+      const saved = useFiltersStore.getState().viewport;
       const m = new google.maps.Map(containerRef.current, {
-        center: viewport.center ?? JAPAN_CENTER,
-        zoom: viewport.zoom ?? 5,
+        center: saved.center ?? JAPAN_CENTER,
+        zoom: saved.zoom ?? 5,
         mapId: 'OUR_PINS_MAP',
         disableDefaultUI: true,
         zoomControl: true,

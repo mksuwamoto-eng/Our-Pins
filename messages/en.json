@@ -98,6 +98,11 @@
     "noPinsYet": "{name} hasn't pinned anything yet.",
     "viewOnMap": "See them on the map"
   },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This page doesn’t exist or may have been moved.",
+    "back": "Back to the map"
+  },
   "board": {
     "title": "Noticeboard",
     "navTitle": "Board",
@@ -124,6 +129,19 @@
     "removeFailed": "Couldn't remove that — try again.",
     "empty": "Nothing here yet. Share something with the community!",
     "formerMember": "Former member"
+  },
+  "categories": {
+    "restaurants": "Restaurants",
+    "cafes": "Cafés",
+    "bakeries-sweets": "Bakeries & sweets",
+    "bars-drinks": "Bars & drinks",
+    "greek-shops": "Greek-product shops",
+    "shopping": "Shopping",
+    "weekend-trips": "Weekend trips",
+    "things-to-do": "Things to do",
+    "onsen": "Onsen",
+    "hiking": "Hiking",
+    "family": "Family-friendly"
   },
   "activity": {
     "title": "Activity",

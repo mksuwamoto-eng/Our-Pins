@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Category, Pin } from '@/lib/supabase/types';
+import { categoryLabel } from '@/lib/i18n/category';
 
 interface FetchedPlace {
   placeId: string;
@@ -21,6 +22,7 @@ interface Props {
 export function InlineAddPinForm({ place, categories, onSaved }: Props) {
   const t = useTranslations('pin');
   const tCommon = useTranslations('common');
+  const tc = useTranslations('categories');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [vouchNote, setVouchNote] = useState('');
   const [pending, setPending] = useState(false);
@@ -83,7 +85,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
         >
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.label}
+              {categoryLabel(tc, c)}
             </option>
           ))}
         </select>
@@ -101,9 +103,12 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
         />
       </div>
       {error ? <p className="text-sm text-[var(--color-terracotta-500)]">{error}</p> : null}
+      {/* Only disable while submitting. A missing note is caught by the
+          textarea's `required` (native validation prompts the user) — a
+          note-based disable made the button look dead with no explanation. */}
       <button
         type="submit"
-        disabled={pending || !vouchNote.trim()}
+        disabled={pending}
         className="w-full rounded-lg bg-[var(--primary)] px-4 py-3 font-medium text-white disabled:opacity-60"
       >
         {pending ? tCommon('loading') : t('saveAndVouch')}

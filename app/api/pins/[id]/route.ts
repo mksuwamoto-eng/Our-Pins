@@ -3,8 +3,12 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { translatePinNote } from '@/lib/i18n/translate';
 import { pinUpdateSchema } from '@/lib/schemas/pin';
 
+// A non-UUID id would surface as a Postgres 22P02 → misleading 500.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!UUID_RE.test(id)) return new NextResponse('not found', { status: 404 });
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -52,6 +56,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
  */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!UUID_RE.test(id)) return new NextResponse('not found', { status: 404 });
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

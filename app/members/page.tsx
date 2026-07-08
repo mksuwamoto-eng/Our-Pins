@@ -16,7 +16,9 @@ export default async function MembersPage() {
       .is('archived_at', null)
       .order('created_at', { ascending: true }),
     supabase.from('pins').select('created_by').is('archived_at', null),
-    supabase.from('vouches').select('voucher_id'),
+    // !inner + archived filter so the grid vouch count matches the member
+    // profile page, which excludes vouches on archived pins.
+    supabase.from('vouches').select('voucher_id, pins!inner(archived_at)').is('pins.archived_at', null),
   ]);
 
   const pinsByMember = new Map<string, number>();

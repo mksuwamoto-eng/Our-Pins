@@ -40,8 +40,10 @@ export async function AppShell({ children }: { children: ReactNode }) {
           <img src="/icons/goj-logo.png" alt="" className="h-8 w-8 rounded-md" />
           <span className="hidden min-[440px]:inline">{t('name')}</span>
         </Link>
-        {/* Scrolls horizontally on narrow screens instead of wrapping/cramping. */}
-        <nav className="flex min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap text-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Links scroll horizontally on narrow screens; the toggles below are
+            pinned outside this scroll region so they never get pushed
+            off-screen on phone widths. */}
+        <nav className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto whitespace-nowrap text-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Link href="/activity" className="shrink-0">{tActivity('title')}</Link>
           <Link href="/board" className="shrink-0">{tBoard('navTitle')}</Link>
           <Link href="/members" className="shrink-0">{tMembers('title')}</Link>
@@ -60,11 +62,12 @@ export async function AppShell({ children }: { children: ReactNode }) {
             <Link href="/admin/members" className="shrink-0">{tAdmin('title')}</Link>
           ) : null}
           <Link href="/settings" className="shrink-0">{tSettings('title')}</Link>
-          <span className="flex shrink-0 items-center gap-3">
-            <LanguageToggle />
-            <ThemeToggle />
-          </span>
         </nav>
+        {/* Always-visible controls, pinned to the right edge. */}
+        <span className="flex shrink-0 items-center gap-3 border-l border-[var(--border)] pl-3">
+          <LanguageToggle />
+          <ThemeToggle />
+        </span>
       </header>
       <main className="flex-1">{children}</main>
     </div>

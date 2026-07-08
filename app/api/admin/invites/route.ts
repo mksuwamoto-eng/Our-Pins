@@ -9,6 +9,13 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new NextResponse('unauth', { status: 401 });
 
+  // Middleware gates /admin pages but NOT /api/admin/* (its check is
+  // startsWith('/admin'), and this path is /api/admin/...). RLS already blocks
+  // the insert for non-admins, but that surfaces as a 500 — check explicitly so
+  // a non-admin gets a clean 403.
+  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (me?.role !== 'admin') return new NextResponse('forbidden', { status: 403 });
+
   const body = await req.json().catch(() => ({}));
   const parsed = inviteCreateSchema.safeParse(body);
   if (!parsed.success) {
@@ -21,6 +28,9 @@ export async function POST(req: Request) {
   }));
 
   const { data, error } = await supabase.from('invites').insert(rows).select();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('invite create failed:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
   return NextResponse.json(data);
 }

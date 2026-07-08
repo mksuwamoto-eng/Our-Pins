@@ -10,12 +10,18 @@ export async function POST() {
 
   // Run the SECURITY DEFINER scrub.
   const { error: rpcErr } = await supabase.rpc('delete_user', { p_user: user.id });
-  if (rpcErr) return new NextResponse(rpcErr.message, { status: 500 });
+  if (rpcErr) {
+    console.error('account delete (scrub) failed:', rpcErr);
+    return new NextResponse('server error', { status: 500 });
+  }
 
   // Then hard-delete the auth.users row using the admin client.
   const admin = createSupabaseAdminClient();
   const { error: delErr } = await admin.auth.admin.deleteUser(user.id);
-  if (delErr) return new NextResponse(delErr.message, { status: 500 });
+  if (delErr) {
+    console.error('account delete (auth row) failed:', delErr);
+    return new NextResponse('server error', { status: 500 });
+  }
 
   await supabase.auth.signOut();
   return NextResponse.json({ ok: true });
