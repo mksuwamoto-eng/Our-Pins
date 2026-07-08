@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { getServerEnv } from '@/lib/env';
@@ -36,8 +37,14 @@ export async function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
         <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap font-serif text-xl">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/goj-logo.png" alt="" className="h-8 w-8 rounded-md" />
+          <Image
+            src="/icons/goj-logo.png"
+            alt=""
+            width={32}
+            height={32}
+            priority
+            className="h-8 w-8 rounded-md"
+          />
           <span className="hidden min-[440px]:inline">{t('name')}</span>
         </Link>
         {/* Links scroll horizontally on narrow screens; the toggles below are

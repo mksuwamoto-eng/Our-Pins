@@ -36,6 +36,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning className={`${inter.variable} ${serif.variable}`}>
+      <head>
+        {/* Warm up the TCP+TLS handshake to Google's map hosts before the Maps
+            JS asks for them — the map tiles are the page's LCP element, so
+            shaving the connection setup makes the map paint sooner. */}
+        <link rel="preconnect" href="https://maps.googleapis.com" />
+        <link rel="preconnect" href="https://maps.gstatic.com" />
+      </head>
       <body className="min-h-screen antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

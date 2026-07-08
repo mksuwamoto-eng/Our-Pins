@@ -13,7 +13,11 @@ const PUBLIC_PREFIXES = [
   '/api/line/webhook',
   '/no-invite',
   '/privacy',
-  '/manifest',
+  // The PWA manifest route Next generates from app/manifest.ts. Must be listed
+  // exactly: the prefix match below treats '/manifest' as '/manifest' or
+  // '/manifest/…', which does NOT cover '/manifest.webmanifest', so without
+  // this the manifest 307-redirects to /sign-in and the PWA install data 404s.
+  '/manifest.webmanifest',
   '/icons',
   '/favicon',
 ];
