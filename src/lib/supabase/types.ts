@@ -109,6 +109,14 @@ export interface Invite {
   used_at: string | null;
 }
 
+export interface LineGroup {
+  group_id: string;
+  label: string | null;
+  digest_enabled: boolean;
+  added_at: string;
+  left_at: string | null;
+}
+
 export type AcceptInviteResult = 'accepted' | 'already_member' | 'expired' | 'invalid';
 
 export interface JwtClaims {

@@ -12,6 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/members">{t('members')}</Link>
           <Link href="/admin/invites">{t('invites')}</Link>
           <Link href="/admin/moderation">{t('moderation')}</Link>
+          <Link href="/admin/line-groups">{t('lineGroups')}</Link>
         </nav>
         {children}
       </div>

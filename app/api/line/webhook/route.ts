@@ -6,6 +6,7 @@ import {
   verifyLineSignature,
   type LineWebhookEvent,
 } from '@/lib/line/messaging';
+import { activateLineGroup, deactivateLineGroup, ensureLineGroup } from '@/lib/line/groups';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import { getServerEnv, publicEnv } from '@/lib/env';
 
@@ -48,6 +49,11 @@ const USAGE_HINT_REPLY =
   'Γεια! 👋 Ask me about places members have vouched for — e.g. "@parea πού για καλό καφέ;" or "@parea any good restaurants in Tokyo?"';
 
 const INTRO_REPLY = `Γεια σας! I’m Parea, the Our Pins concierge for Greeks of Japan. Ask me for places the community has vouched for — try "πού για καλό καφέ;" or "any good restaurants in Tokyo?" — and I’ll answer with who recommended what. In the group chat, start your message with @parea (or mention me). I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
+
+// Shown when the bot is added to a GROUP. The group is a digest target, not a
+// Q&A surface (passive group Q&A is off), so this copy points people to 1:1 DMs
+// for recommendations rather than inviting @parea messages that go unanswered.
+const GROUP_JOIN_REPLY = `Γεια σας! 👋 Είμαι η Parea. Θα μοιράζομαι εδώ μια εβδομαδιαία σύνοψη με νέα μέρη και ανακοινώσεις της κοινότητας. Για προσωπικές προτάσεις, πρόσθεσέ με ως φίλη και στείλε μου προσωπικό μήνυμα! / I’ll post a weekly digest of new community places and noticeboard posts here. For personal recommendations, add me as a friend and DM me 1:1.`;
 
 /**
  * Render [[pin:<id>|<name>]] markers as "name (Google Maps URL)" — in LINE,
@@ -147,17 +153,27 @@ async function handleEvent(
     return;
   }
 
-  // Bot added to a group: surface the groupId in the logs so it can be
-  // copied into LINE_GROUP_ID.
-  if (event.type === 'join' && event.source?.type === 'group') {
+  // Bot added to a group: register it as a digest target (or reactivate a
+  // group it was removed from and re-added to). Admins manage/label it and
+  // toggle its digest at /admin/line-groups.
+  if (event.type === 'join' && event.source?.type === 'group' && event.source.groupId) {
     console.log('[line/webhook] joined group:', event.source.groupId);
+    await activateLineGroup(event.source.groupId);
     if (event.replyToken) {
       await replyLineMessage({
         replyToken: event.replyToken,
-        text: INTRO_REPLY,
+        text: GROUP_JOIN_REPLY,
         accessToken: opts.accessToken,
       });
     }
+    return;
+  }
+
+  // Bot removed from a group: stop targeting it with the digest. No reply
+  // token on a leave event — just deactivate.
+  if (event.type === 'leave' && event.source?.type === 'group' && event.source.groupId) {
+    console.log('[line/webhook] left group:', event.source.groupId);
+    await deactivateLineGroup(event.source.groupId);
     return;
   }
 
@@ -205,8 +221,11 @@ async function handleEvent(
   }
 
   if (source.type === 'group') {
-    // Only the configured community group; membership there is the trust
-    // boundary, so unmapped members may ask too.
+    // Backfill discovery: a group the bot joined before this code existed (so
+    // its join event was lost) gets registered on the first message we see.
+    if (source.groupId) await ensureLineGroup(source.groupId);
+    // Passive in-group Q&A is gated on LINE_GROUP_ID and stays OFF by default —
+    // being a digest target does NOT enable question-answering here.
     if (!opts.groupId || source.groupId !== opts.groupId) return;
     if (message?.type !== 'text' || !message.text) return;
     const question = groupQuestion(message)?.trim();
