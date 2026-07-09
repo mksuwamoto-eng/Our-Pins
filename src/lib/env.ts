@@ -21,6 +21,9 @@ const serverSchema = publicSchema.extend({
   LINE_MESSAGING_ACCESS_TOKEN: z.string().min(1).optional(),
   // The one group the bot answers in; until set, group messages are ignored.
   LINE_GROUP_ID: z.string().min(1).optional(),
+  // Shared secret the weekly-digest cron presents (Authorization: Bearer …).
+  // Vercel Cron invocations are also accepted via the x-vercel-cron header.
+  CRON_SECRET: z.string().min(1).optional(),
   GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
   // Optional: the Parea Concierge returns 503 until this is set.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),

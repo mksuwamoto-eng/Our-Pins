@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';
+const LINE_PUSH_URL = 'https://api.line.me/v2/bot/message/push';
 const MAX_TEXT_LENGTH = 5000; // LINE hard limit per text message
 
 /**
@@ -39,6 +40,32 @@ export async function replyLineMessage(input: {
   });
   if (!res.ok) {
     throw new Error(`LINE reply failed: ${res.status} ${await res.text()}`);
+  }
+}
+
+/**
+ * Push an unprompted text message to a user / group / room (no reply token).
+ * This is what a scheduled digest needs — reply tokens are single-use and
+ * expire ~1 min after an inbound event.
+ */
+export async function pushLineMessage(input: {
+  to: string;
+  text: string;
+  accessToken: string;
+}): Promise<void> {
+  const res = await fetch(LINE_PUSH_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${input.accessToken}`,
+    },
+    body: JSON.stringify({
+      to: input.to,
+      messages: [{ type: 'text', text: input.text.slice(0, MAX_TEXT_LENGTH) }],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`LINE push failed: ${res.status} ${await res.text()}`);
   }
 }
 

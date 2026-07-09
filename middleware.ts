@@ -11,6 +11,10 @@ const PUBLIC_PREFIXES = [
   // own requests (HMAC), but a future route under /api/line must not be
   // silently public.
   '/api/line/webhook',
+  // Same rationale: the weekly-digest cron authenticates itself (CRON_SECRET /
+  // Vercel's x-vercel-cron header), so it must bypass the session gate that
+  // would otherwise 307 it to /sign-in.
+  '/api/cron/digest',
   '/no-invite',
   '/privacy',
   // The PWA manifest route Next generates from app/manifest.ts. Must be listed
