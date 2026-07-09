@@ -204,6 +204,67 @@ the remaining steps below are only relevant if group mode is a go:
 
 ---
 
+## Resources library + feedback button (built July 9, 2026; verified in dev, pending merge)
+
+Per the converged design in `docs/RESOURCES-DESIGN.md` (all 12 decisions
+locked — do not re-litigate):
+
+- **Resources** — permanent member-posted library (how-tos / watch / read /
+  other) at `/resources`, nav label EN "Resources" / EL **"Χρήσιμα"**.
+  `resources` table (0022, board_posts pattern minus `expires_at`; body ≤5000;
+  optional https-only `url` ≤500 — Zod checks length AFTER the https prepend);
+  creator+admin can EDIT (title/body/url/category via column grants — a
+  deliberate divergence from board), archive as usual. Language bridge covers
+  **title AND body** (`translations jsonb = {title:{el,en}, body:{el,en}}`,
+  `translateResource` in translate.ts — always writes, even null, so a failed
+  re-translation clears stale text; body call passes `maxTokens 16000` because
+  the 6000 default truncates 5000-char bodies mid-JSON). Client-side search
+  matches originals AND translations. Card shows "edited <when>" only for real
+  content edits (0023/0025 trigger WHEN clauses — the bridge's translations
+  write must not bump `updated_at`). Deep-links are `/resources?res=<id>`
+  (query param, NOT `#fragment` — fragments don't survive the sign-in
+  redirect; ResourcesClient absorbs the param, scrolls, flashes a ring, cleans
+  the URL, same pattern as `?pin=`/`?author=`). Concierge: bounded RESOURCES
+  corpus section (both title languages + 400-char code-point-safe excerpt) +
+  **librarian rules** — point via `[[res:id|title]]` markers, never restate
+  steps or enumerate the post's contents. Marker grammar (markers.ts) uses a
+  lazy label + `(?!\])` so titles with brackets — even trailing `]` — render.
+  LINE webhook resolves both marker kinds through one parameterized
+  `markersToLinks` helper (DB-title-over-marker-text injection defense).
+  Weekly digest gained a `📚 Χρήσιμα / Resources` section; any new resource
+  alone passes the content gate (like board posts). Rollout per design Q12:
+  Mako seeds 5–10 real posts BEFORE announcing; nothing is announced
+  automatically.
+- **Feedback button** — header icon (next to language/theme toggles) → Vaul
+  sheet, bug/feature chips + textarea, EL/EN. `feedback` table (0024):
+  member INSERT only (column grants, `return=minimal` so no creator SELECT
+  needed), admin-only SELECT/DELETE, **no UPDATE grant at all** (immutable).
+  `page_context` is allowlisted server-side to app-pathname shape (it renders
+  as trusted metadata for admins). Admin triage at `/admin/feedback`
+  (nav label localized: EL "Σχόλια"), query capped `.limit(200)`.
+- **Deferred refactors** (flagged by the July 9 code review, all pre-existing
+  debt the new pages extended): the ~25-line author/avatar signed-URL block
+  is copied across ~5 pages (board, members, activity, members/[id],
+  resources); `UUID_RE` has 7 copies across API routes; chip button classes
+  ~6 copies. Extract-to-helper candidates for a dedicated session.
+- **Known pre-existing issue observed during verification**: Parea answers in
+  Greek to English questions (4/4 probes incl. a plain place question — NOT
+  caused by the resources prompt edits). The LANGUAGE rule in ask.ts's
+  SYSTEM_INSTRUCTIONS is being ignored under `effort: low`; candidate fix is
+  repeating/moving the rule at the end of the prompt. Not shipped — Mako's
+  call.
+
+**Verification pattern used (reusable):** forge an @supabase/ssr session
+cookie (`sb-<ref>-auth-token=base64-<b64url(session JSON)>` with a minted
+HS256 JWT) to drive local-dev API routes and the browser preview as any
+member; probe RLS/grants directly via PostgREST. Scripts in the session
+scratchpad (verify-0022/phase2/phase4/0023-0024). **Gotcha:** never run
+`pnpm build` while `pnpm dev` is running — they share `.next` and the dev
+server serves corrupted chunks afterward (pages render but React never
+hydrates, no console errors; fix: stop dev, `rm -rf .next`, restart).
+
+---
+
 ## Open issues / pending TODOs
 
 In rough priority:
@@ -321,6 +382,26 @@ In `supabase/migrations/`:
 - `0021` — flips `line_groups.digest_enabled` default to **false** so adding
   the bot to a group never auto-posts a digest; an admin enables it per group
   at `/admin/line-groups`. Applied July 9, 2026.
+- `0022` — `resources` table (permanent library; board_posts pattern with the
+  0017 lesson baked into SELECT from day one and the 0012 revoke-then-grant
+  column grants; UPDATE grant includes content columns for the edit feature —
+  wider than board's by design). Applied July 9, 2026; verified with 15
+  minted-JWT probes against prod.
+- `0023` — `resources_updated_at` trigger re-created with a WHEN clause
+  (title/body/url/category changes only) so the language bridge's
+  translations write doesn't bump `updated_at` and light the "edited" badge
+  on every post. Applied July 9, 2026.
+- `0024` — `feedback` table (bug/feature reports; member column-granted
+  INSERT only, admin-only SELECT/DELETE, no UPDATE grant — immutable rows).
+  Applied July 9, 2026; verified 7/7 probes.
+- `0025` — extends 0023's fix to **pins, vouches, board_posts** via a
+  table-agnostic WHEN clause (`to_jsonb(old/new) - 'translations' -
+  'updated_at' is distinct from …`): the bridge was silently bumping
+  updated_at on nearly every row of all three (latent, irreversible timestamp
+  corruption — caught by the July 9 code review). Unlike 0023, archive still
+  bumps (preserves prior semantics; only translations-only writes are
+  excluded). Also REVOKEs anon grants on resources + feedback
+  (defense-in-depth; older tables share the gap — follow-up sweep TODO).
 
 ---
 
