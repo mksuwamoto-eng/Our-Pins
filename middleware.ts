@@ -4,6 +4,9 @@ import { updateSession } from './src/lib/supabase/middleware';
 const PUBLIC_PREFIXES = [
   '/_next',
   '/sign-in',
+  // Unlinked admin-only sign-in entry point (Google + magic-link fallback).
+  // Must stay public so a logged-out admin can reach it directly.
+  '/admin-login',
   '/invite',
   '/auth',
   '/api/auth',
