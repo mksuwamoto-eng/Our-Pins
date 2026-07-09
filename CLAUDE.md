@@ -138,7 +138,29 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 
 ---
 
-## LINE bot "Parea" — 1:1 live, group chat on hold (July 6, 2026)
+## LINE bot "Parea" — 1:1 live, weekly digest live, passive group Q&A off (updated July 9, 2026)
+
+> **July 9, 2026 — weekly digest shipped.** The bot now joins LINE groups to
+> post a **weekly digest** (Sun 19:00 JST via Vercel cron `0 10 * * 0` →
+> `app/api/cron/digest/route.ts` → `src/lib/digest/build.ts`
+> `buildWeeklyDigest`). It's **deterministic** (no LLM), bilingual, lists the
+> week's new pins / noticeboard posts / new members with app deep-links, and is
+> **content-gated** (skip unless ≥1 new board post OR ≥2 total new items — quiet
+> weeks stay silent). Pushes to each enabled group independently
+> (`pushLineMessage` in `src/lib/line/messaging.ts`), idempotent per
+> `(week_start, group_id)` via `digest_runs`. Groups **auto-register** (join
+> event, or backfilled from first message, cache-guarded) in `line_groups`;
+> managed at **`/admin/line-groups`** (label + per-group digest toggle). Join is
+> **silent** (no auto-message) and digest **defaults OFF** per group (0020/0021),
+> so adding the bot to a group has ZERO visible effect until an admin toggles it
+> on. Cron route self-authenticates (`CRON_SECRET` env, or Vercel's
+> `x-vercel-cron` header) and is allow-listed in `middleware.ts`. A localhost
+> dry-run (`GET /api/cron/digest?dry=1`, dev-only) previews the text against prod
+> data without posting. Verified on a test group (Mako ran a manual send).
+> Passive `@parea` group **Q&A stays OFF** (still gated on `LINE_GROUP_ID`) —
+> being a digest target does not enable question-answering. Group-chat capture /
+> "ask the bot what was posted in the group" is a SEPARATE, not-yet-designed idea
+> (being grilled) — do not assume it exists.
 
 The Concierge is reachable from LINE — the "LINE bridge" from the
 vision deck (Horizon 2). `app/api/line/webhook/route.ts` receives
@@ -292,6 +314,13 @@ In `supabase/migrations/`:
   mental-health), sort_order 90–140, insert-only. Applied to cloud
   July 8, 2026. Privacy trade-off consciously accepted: a public
   vouch in `mental-health` discloses the voucher uses those services.
+- `0020` — `line_groups` (LINE group registry / weekly-digest targets;
+  admin-read via `user_role='admin'`, service-role write, no member write
+  path) + `digest_runs` (weekly-digest idempotency, unique per
+  `(week_start, group_id)`, service-role only). Applied July 9, 2026.
+- `0021` — flips `line_groups.digest_enabled` default to **false** so adding
+  the bot to a group never auto-posts a digest; an admin enables it per group
+  at `/admin/line-groups`. Applied July 9, 2026.
 
 ---
 
