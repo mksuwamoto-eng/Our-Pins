@@ -10,6 +10,7 @@ import { useFiltersStore } from '@/stores/filters';
 import { useRealtimePins } from '@/lib/supabase/realtime';
 import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category, Pin } from '@/lib/supabase/types';
+import { categoryLabel } from '@/lib/i18n/category';
 import { PinSheet, type SheetSelection } from './PinSheet';
 import { FilterBar } from './FilterBar';
 
@@ -36,6 +37,7 @@ interface Props {
 export function MapView({ initialPins, categories, members }: Props) {
   const t = useTranslations('map');
   const tCommon = useTranslations('common');
+  const tCat = useTranslations('categories');
   const containerRef = useRef<HTMLDivElement>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const router = useRouter();
@@ -185,10 +187,15 @@ export function MapView({ initialPins, categories, members }: Props) {
       if (authorIds.length && !authorIds.includes(p.created_by)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
+        // Search covers the pin name, note, address, its (localized) category
+        // label, and both stored translations — so category words ("sushi",
+        // "καφέ") and a reader's translated note both match.
         // Note: substring match only. Japanese-script names won't match Romaji
         // queries (e.g., "Ootoya" misses 大戸屋). Proper fix requires a
         // transliterated name column or a romaji search index.
-        const haystack = `${p.name}\n${p.vouch_note}\n${p.address}`.toLowerCase();
+        const cat = categoryById.get(p.category_id);
+        const catLabel = cat ? categoryLabel(tCat, cat) : '';
+        const haystack = `${p.name}\n${p.vouch_note}\n${p.address}\n${catLabel}\n${p.translations?.el ?? ''}\n${p.translations?.en ?? ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -209,7 +216,7 @@ export function MapView({ initialPins, categories, members }: Props) {
     return () => {
       clustererRef.current?.clearMarkers();
     };
-  }, [map, pins, categoryIds, prefectures, authorIds, search, categoryById]);
+  }, [map, pins, categoryIds, prefectures, authorIds, search, categoryById, tCat]);
 
   function handlePinSaved(p: Pin) {
     setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
