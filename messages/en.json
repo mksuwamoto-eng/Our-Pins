@@ -165,6 +165,21 @@
     "formerMember": "Former member",
     "updated": "edited {when}"
   },
+  "feedback": {
+    "buttonLabel": "Report a bug or suggest a feature",
+    "title": "Feedback",
+    "subtitle": "Spotted a bug or wishing for something? It goes straight to the admins.",
+    "kind_bug": "Bug",
+    "kind_feature": "Idea / feature",
+    "bodyLabel": "Tell us about it",
+    "bodyPlaceholder": "The more detail, the better…",
+    "required": "Write something first.",
+    "submit": "Send",
+    "sending": "Sending…",
+    "failed": "Couldn't send — try again.",
+    "thanks": "Thank you! Your feedback is in.",
+    "close": "Close"
+  },
   "categories": {
     "restaurants": "Restaurants",
     "cafes": "Cafés",
@@ -219,7 +234,8 @@
     "revoke": "Revoke",
     "toggleMembership": "Toggle membership",
     "promoteAdmin": "Promote to admin",
-    "demoteAdmin": "Demote to member"
+    "demoteAdmin": "Demote to member",
+    "feedback": "Feedback"
   },
   "concierge": {
     "title": "Ask Parea",

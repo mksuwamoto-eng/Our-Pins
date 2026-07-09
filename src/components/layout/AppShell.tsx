@@ -6,6 +6,7 @@ import { getServerEnv } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
+import { FeedbackButton } from '@/components/feedback/FeedbackButton';
 
 export async function AppShell({ children }: { children: ReactNode }) {
   const t = await getTranslations('app');
@@ -78,6 +79,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
         </nav>
         {/* Always-visible controls, pinned to the right edge. */}
         <span className="flex shrink-0 items-center gap-3 border-l border-[var(--border)] pl-3">
+          <FeedbackButton />
           <LanguageToggle />
           <ThemeToggle />
         </span>
