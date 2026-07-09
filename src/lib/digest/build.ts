@@ -115,7 +115,6 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
     lines.push('', `📌 Νέα μέρη / New places (${newPins.length})`);
     for (const p of newPins.slice(0, MAX_PINS)) {
       lines.push(`• ${p.name} — ${categoryLabel(slugOf.get(p.category_id) ?? '')}`);
-      lines.push(`  ${SITE}/?pin=${p.id}`);
     }
     if (newPins.length > MAX_PINS) lines.push(`  …κι άλλα ${newPins.length - MAX_PINS} / +${newPins.length - MAX_PINS} more`);
   }
@@ -133,11 +132,9 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
     lines.push('', `📚 Χρήσιμα / Resources (${newResources.length})`);
     for (const r of newResources.slice(0, MAX_RESOURCES)) {
       lines.push(`• [${resourceCategoryLabel(r.category)}] ${r.title}`);
-      // Query param, not #fragment — fragments don't survive the sign-in
-      // redirect (middleware keeps only pathname + search, like ?pin=).
-      lines.push(`  ${SITE}/resources?res=${r.id}`);
     }
     if (newResources.length > MAX_RESOURCES) lines.push(`  …κι άλλα ${newResources.length - MAX_RESOURCES} / +${newResources.length - MAX_RESOURCES} more`);
+    lines.push(`👉 ${SITE}/resources`);
   }
 
   if (newMembers.length) {

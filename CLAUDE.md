@@ -15,8 +15,10 @@ the first to vouch. Mako (the user) is the lead admin.
 - **Production**: https://our-pins.vercel.app (Vercel; no custom
   domain planned — decided against `ourpins.app`, July 6, 2026)
 - **Default branch**: `main`
-- **Active feature branch**: `claude/deploy-vercel-Lh8VI` (kept ahead
-  of main; local Claude on Mako's Mac merges to main + pushes)
+- **Branch flow (as of July 9, 2026)**: commit straight to `main` and
+  push; Vercel deploys from `main`. (Older sessions used a
+  `claude/deploy-vercel-Lh8VI` feature branch kept ahead of main — no
+  longer the workflow.)
 
 ---
 
@@ -65,14 +67,24 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 
 ## What works in production (verified end-to-end with a real test user)
 
+- ✅ **Public sign-in is LINE-only** (commit `3fe8d49`, July 9, 2026):
+  the `/sign-in` page shows only "Sign in with LINE". The app is
+  announced only in the community's LINE group, so anyone who sees the
+  announcement already has LINE. Google OAuth + magic link still work as
+  mechanisms but were moved to an unlinked `/admin-login` page (added to
+  `middleware.ts` `PUBLIC_PREFIXES`) for Mako's own admin login —
+  reachable only if you know the URL, not referenced from any nav.
 - ✅ Sign-in via **magic link** (Supabase `signInWithOtp`, custom
   callback at `/api/auth/magic/callback`). Email sender is Supabase's
-  default (rate-limited ~3/hr, often lands in spam).
+  default (rate-limited ~3/hr, often lands in spam). Now surfaced only
+  on `/admin-login`, not the public sign-in page.
 - ✅ Sign-in via **Google OAuth** (alt-email is the only whitelisted
-  test user other than Mako himself).
+  test user other than Mako himself). Also surfaced only on
+  `/admin-login` now.
 - ✅ Invite flow: admin mints invite at `/admin/invites` → "Copy link"
-  → friend opens link → cookie set → sign-in page → magic link or
-  Google → callback consumes invite (flips `is_member=true`) → onboarding.
+  → friend opens link → cookie set → sign-in page → LINE (the only
+  public method) → callback consumes invite (flips `is_member=true`) →
+  onboarding.
 - ✅ Onboarding form: profile photo (optional), display name (required,
   case-insensitively unique), full name (optional, admin-only),
   Instagram + website (both optional, auto-prepends `https://`),
@@ -109,8 +121,10 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
   `[[pin:id|name]]` markers render as deep-links. Full-corpus prompt
   (no vector store — deliberate at this scale) with prompt caching.
   Spend caps: `concierge_queries` log table, default $10/month
-  (`CONCIERGE_MONTHLY_BUDGET_USD`) + 20 queries/user/day. Migrations
-  0013/0014 applied; `ANTHROPIC_API_KEY` set (per Mako, July 5, 2026).
+  (`CONCIERGE_MONTHLY_BUDGET_USD`) + 20 queries/user/day. The log stores
+  question, asker id, tokens, cost, AND the model's answer text (answer
+  added by migration 0026, July 9, 2026; disclosed in the privacy policy).
+  Migrations 0013/0014 applied; `ANTHROPIC_API_KEY` set (per Mako, July 5, 2026).
 - ✅ **Language bridge** — pin notes + vouch comments auto-translated
   EL↔EN on write (via `next/server after()`), stored in
   `translations jsonb`; PinSheet shows the reader's language with a
@@ -187,20 +201,28 @@ created under the same provider as LINE Login, `LINE_MESSAGING_CHANNEL_SECRET`
 - Vouch-drafting from shared locations: deliberately NOT in v1
   (replies "can't do that yet").
 
-**To bring the group-chat mode live, Mako must decide + then:**
+**DECISION (July 9, 2026): passive/mention-gated group Q&A stays
+PERMANENTLY off.** The bot is in the main LINE group ONLY to post the
+weekly digest; `LINE_GROUP_ID` stays unset so in-group question-answering
+never fires. Settled stance, not a "for now." Rationale: even
+mention-gated (`@parea` only), a general-purpose group used for other
+things could feel like noise if several restaurant questions land
+back-to-back. Members who want Parea reach it 1:1 instead (publicize the
+bot's LINE account). Rejected alternatives (do not re-propose without new
+info): a second bot-only group (onboarding friction — nobody re-adds new
+members); per-user push of answers/digest (LINE free plan caps push at
+200/month total — a weekly per-member push would blow the quota in week
+one; group broadcast is ~4–5 pushes/month regardless of size).
 
-Mako is reconsidering whether the group mode should ship at all — the
-concern is that even mention-gated (`@parea` only, not passive), a
-public group chat used for other things could feel like noise if
-several people ask restaurant questions back to back. Alternative
-floated: don't add the bot to the group; instead publicize the bot's
-LINE account so members reach it 1:1 individually. Decision pending —
-the remaining steps below are only relevant if group mode is a go:
+Remaining work (transparency, not code): post a one-time message in the
+LINE group explaining the bot only posts a weekly recap of already-public
+in-app data — it doesn't read/store/use other group messages and can't see
+the roster beyond people who message it directly — and mirror it as a
+permanent `/resources` post so it's durably checkable, not just scrollback.
 
-1. Add the bot to the Greeks-of-Japan LINE group; copy the groupId
-   from the `[line/webhook] joined group:` line in Vercel logs into
-   `LINE_GROUP_ID` (both envs); redeploy.
-2. Test: @mention in group.
+If group Q&A were ever reversed (not planned): add the bot to the group,
+copy the groupId from the `[line/webhook] joined group:` Vercel log line
+into `LINE_GROUP_ID` (both envs), redeploy, and @mention to test.
 
 ---
 
@@ -274,10 +296,11 @@ In rough priority:
    `app/api/pins/[id]/photos/route.ts`; the client-side uploader was
    deferred. Avatar upload (via `/api/profile/avatar` route + admin
    client) is the template to copy from.
-2. **LINE bot group-chat mode** — 1:1 is DONE and confirmed working
-   (July 6, 2026); see "LINE bot 'Parea'" above. Group mode is on hold
-   pending Mako's call on whether it's worth the noise vs. just
-   publicizing the bot's LINE account for 1:1 use.
+2. ~~**LINE bot group-chat mode**~~ — DECIDED (July 9, 2026): passive/
+   mention-gated group Q&A stays PERMANENTLY off; the bot sits in the
+   group only for the weekly digest. 1:1 chat is DONE (July 6, 2026). See
+   "LINE bot 'Parea'" above. Only remaining item is a one-time
+   transparency post in the group (+ a mirror `/resources` post).
 3. ~~Custom domain `ourpins.app`~~ — DECIDED AGAINST (July 6, 2026).
    Not pursuing; production stays on `our-pins.vercel.app`.
 4. **SMTP for magic-link emails**. Currently Supabase's default
@@ -402,6 +425,12 @@ In `supabase/migrations/`:
   bumps (preserves prior semantics; only translations-only writes are
   excluded). Also REVOKEs anon grants on resources + feedback
   (defense-in-depth; older tables share the gap — follow-up sweep TODO).
+- `0026` — adds `concierge_queries.answer` (text, nullable) so the
+  Concierge log stores the model's reply next to the question. Written by
+  the same service-role UPDATE in `ask.ts` that records tokens/cost;
+  stays null for reserved-but-never-answered rows (guard/model failures).
+  RLS-enabled-no-policies (service-role only) unchanged from 0013.
+  Disclosed in the privacy policy. Applied to cloud July 9, 2026.
 
 ---
 

@@ -170,6 +170,7 @@ export async function askParea(input: {
   const { error: logError } = await admin
     .from('concierge_queries')
     .update({
+      answer,
       input_tokens: u.input_tokens,
       cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
       cache_read_input_tokens: u.cache_read_input_tokens ?? 0,

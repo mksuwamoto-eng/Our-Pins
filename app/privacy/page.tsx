@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
       <h1 className="mb-2 font-serif text-3xl text-[var(--fg)]">Privacy Policy</h1>
-      <p className="mb-8 text-sm text-[var(--muted)]">Last updated: July 5, 2026</p>
+      <p className="mb-8 text-sm text-[var(--muted)]">Last updated: July 9, 2026</p>
 
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-[var(--fg)]">
         <section>
@@ -29,6 +29,11 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Content you post</strong>: places you pin, vouches, and comments.
+            </li>
+            <li>
+              <strong>Questions you ask Parea</strong>: when you use our in-app assistant
+              (Parea), we log your questions and its answers so admins can monitor usage
+              and prevent abuse.
             </li>
           </ul>
         </section>
