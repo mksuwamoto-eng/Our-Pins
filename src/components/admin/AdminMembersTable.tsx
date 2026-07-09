@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 
 interface Row {
   id: string;
@@ -26,10 +25,19 @@ export function AdminMembersTable({ rows }: { rows: Row[] }) {
     patch: Partial<Pick<Row, 'is_member' | 'role'>>,
   ) {
     setBusy(`${id}:${field}`);
-    const supabase = getSupabaseBrowserClient();
-    await supabase.from('profiles').update(patch).eq('id', id);
-    router.refresh();
-    setBusy(null);
+    try {
+      // Must go through the service-role route: 0012 revoked the browser
+      // client's grant to update is_member/role, so a direct update no-ops.
+      const res = await fetch('/api/admin/members', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id, ...patch }),
+      });
+      if (!res.ok) alert(`Could not update member: ${await res.text()}`);
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
