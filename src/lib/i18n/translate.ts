@@ -20,16 +20,21 @@ const FORMAT = {
  * Returns null when translation is unavailable (no API key) or fails —
  * callers store null and the UI falls back to the original.
  */
-export async function translateBoth(text: string): Promise<{ el: string; en: string } | null> {
+export async function translateBoth(
+  text: string,
+  // Must fit verbatim copy + translation of the longest input; 2200 truncated
+  // 2000-char board posts and broke the JSON. The 6000 default fits those;
+  // longer inputs (resource bodies allow 5000 chars) must pass a bigger cap
+  // or the same truncate-and-null failure recurs.
+  maxTokens = 6000,
+): Promise<{ el: string; en: string } | null> {
   const env = getServerEnv();
   if (!env.ANTHROPIC_API_KEY) return null;
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
   try {
     const response = await anthropic.messages.create({
       model: MODEL,
-      // Must fit verbatim copy + translation of the longest input (board
-      // posts allow 2000 chars); 2200 truncated those and broke the JSON.
-      max_tokens: 6000,
+      max_tokens: maxTokens,
       output_config: { format: FORMAT },
       system:
         'You translate short community reviews between Greek and English for a private map app. ' +
@@ -69,6 +74,24 @@ export async function translateBoardPost(postId: string, body: string) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.from('board_posts').update({ translations }).eq('id', postId);
   if (error) console.error('storing board post translation failed:', error);
+}
+
+/**
+ * Translate a resource's title AND body and store them (nested jsonb:
+ * { title: {el,en}, body: {el,en} }). Fire from next/server after(), on
+ * create and on every edit. Unlike the other callers this always writes —
+ * even null — so an edit whose translation fails clears the previous
+ * translations instead of leaving them attached to the new text.
+ */
+export async function translateResource(resourceId: string, title: string, body: string) {
+  // Bodies run up to 5000 chars — Greek is >1 token/char, and the model must
+  // emit verbatim copy + translation, so the board-sized default cap would
+  // truncate long how-tos mid-JSON (returning null and clearing translations).
+  const [titleT, bodyT] = await Promise.all([translateBoth(title), translateBoth(body, 16000)]);
+  const translations = titleT || bodyT ? { title: titleT, body: bodyT } : null;
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.from('resources').update({ translations }).eq('id', resourceId);
+  if (error) console.error('storing resource translation failed:', error);
 }
 
 /** Translate a vouch comment and store it. Fire from next/server after(). */

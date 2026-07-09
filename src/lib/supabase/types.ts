@@ -99,6 +99,24 @@ export interface BoardPost {
   updated_at: string;
 }
 
+export type ResourceCategory = 'how_to' | 'watch' | 'read' | 'other';
+
+/** Both fields bridged (unlike board, whose titles stay untranslated). */
+export type ResourceTranslations = { title?: Translations; body?: Translations } | null;
+
+export interface Resource {
+  id: string;
+  created_by: string;
+  category: ResourceCategory;
+  title: string;
+  body: string;
+  url: string | null;
+  translations: ResourceTranslations;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Invite {
   token: string;
   created_by: string;

@@ -12,6 +12,7 @@ import elMessages from '../../../messages/el.json';
 const WINDOW_DAYS = 7;
 const MAX_PINS = 8;
 const MAX_POSTS = 6;
+const MAX_RESOURCES = 6;
 const MAX_MEMBERS = 8;
 
 const SITE = publicEnv.NEXT_PUBLIC_SITE_URL;
@@ -19,6 +20,8 @@ const enCat = enMessages.categories as Record<string, string>;
 const elCat = elMessages.categories as Record<string, string>;
 const enBoard = enMessages.board as Record<string, string>;
 const elBoard = elMessages.board as Record<string, string>;
+const enRes = enMessages.resources as Record<string, string>;
+const elRes = elMessages.resources as Record<string, string>;
 
 /** "Καφέ / Cafés" when the labels differ, else just the one. */
 function bilingual(el: string | undefined, en: string | undefined): string {
@@ -37,6 +40,11 @@ function boardCategoryLabel(cat: string): string {
   return bilingual(elBoard[key], enBoard[key]) || cat;
 }
 
+function resourceCategoryLabel(cat: string): string {
+  const key = `category_${cat}`;
+  return bilingual(elRes[key], enRes[key]) || cat;
+}
+
 export interface DigestResult {
   /** True when there's enough new content to be worth posting. */
   send: boolean;
@@ -44,7 +52,7 @@ export interface DigestResult {
   weekStart: string;
   /** The rendered bilingual message (built even when send is false, for preview). */
   text: string;
-  counts: { pins: number; posts: number; members: number };
+  counts: { pins: number; posts: number; resources: number; members: number };
 }
 
 export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestResult> {
@@ -52,7 +60,7 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
   const windowStartISO = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
   const nowISO = now.toISOString();
 
-  const [{ data: pins }, { data: posts }, { data: members }, { data: categories }] =
+  const [{ data: pins }, { data: posts }, { data: resources }, { data: members }, { data: categories }] =
     await Promise.all([
       admin
         .from('pins')
@@ -68,6 +76,12 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
         .gte('created_at', windowStartISO)
         .order('created_at', { ascending: false }),
       admin
+        .from('resources')
+        .select('id, category, title, created_at')
+        .is('archived_at', null)
+        .gte('created_at', windowStartISO)
+        .order('created_at', { ascending: false }),
+      admin
         .from('profiles')
         .select('id, display_name, onboarded_at')
         .eq('is_member', true)
@@ -80,14 +94,20 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
   const slugOf = new Map((categories ?? []).map((c) => [c.id, c.slug]));
   const newPins = pins ?? [];
   const newPosts = posts ?? [];
+  const newResources = resources ?? [];
   const newMembers = members ?? [];
 
-  const counts = { pins: newPins.length, posts: newPosts.length, members: newMembers.length };
-  // Gate: any new noticeboard post is worth a post on its own (the whole point
-  // is that board posts don't go unseen); otherwise require ≥2 new items so a
-  // single stray pin doesn't trigger a near-empty digest.
-  const total = counts.pins + counts.posts + counts.members;
-  const send = counts.posts >= 1 || total >= 2;
+  const counts = {
+    pins: newPins.length,
+    posts: newPosts.length,
+    resources: newResources.length,
+    members: newMembers.length,
+  };
+  // Gate: any new noticeboard post or library resource is worth a post on its
+  // own (the whole point is that they don't go unseen); otherwise require ≥2
+  // new items so a single stray pin doesn't trigger a near-empty digest.
+  const total = counts.pins + counts.posts + counts.resources + counts.members;
+  const send = counts.posts >= 1 || counts.resources >= 1 || total >= 2;
 
   const lines: string[] = ['📍 Our Pins — Εβδομαδιαία σύνοψη / Weekly digest'];
 
@@ -107,6 +127,17 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
     }
     if (newPosts.length > MAX_POSTS) lines.push(`  …κι άλλα ${newPosts.length - MAX_POSTS} / +${newPosts.length - MAX_POSTS} more`);
     lines.push(`👉 ${SITE}/board`);
+  }
+
+  if (newResources.length) {
+    lines.push('', `📚 Χρήσιμα / Resources (${newResources.length})`);
+    for (const r of newResources.slice(0, MAX_RESOURCES)) {
+      lines.push(`• [${resourceCategoryLabel(r.category)}] ${r.title}`);
+      // Query param, not #fragment — fragments don't survive the sign-in
+      // redirect (middleware keeps only pathname + search, like ?pin=).
+      lines.push(`  ${SITE}/resources?res=${r.id}`);
+    }
+    if (newResources.length > MAX_RESOURCES) lines.push(`  …κι άλλα ${newResources.length - MAX_RESOURCES} / +${newResources.length - MAX_RESOURCES} more`);
   }
 
   if (newMembers.length) {

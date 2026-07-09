@@ -4,8 +4,8 @@ import { Drawer } from 'vaul';
 import Link from 'next/link';
 import { useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { MapPin, MessageCircle, Send, X } from 'lucide-react';
-import { PIN_MARKER } from '@/lib/concierge/markers';
+import { BookOpen, MapPin, MessageCircle, Send, X } from 'lucide-react';
+import { ANY_MARKER } from '@/lib/concierge/markers';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -13,24 +13,27 @@ interface ChatMessage {
 }
 
 /**
- * Render an answer, turning [[pin:<id>|<name>]] markers into map deep-links.
+ * Render an answer, turning [[pin:<id>|<name>]] markers into map deep-links
+ * and [[res:<id>|<title>]] markers into library deep-links.
  */
 function renderAnswer(text: string, onNavigate: () => void): ReactNode[] {
   const parts: ReactNode[] = [];
   let last = 0;
   let match: RegExpExecArray | null;
-  PIN_MARKER.lastIndex = 0;
-  while ((match = PIN_MARKER.exec(text)) !== null) {
+  ANY_MARKER.lastIndex = 0;
+  while ((match = ANY_MARKER.exec(text)) !== null) {
+    const [, kind, id, label] = match;
     if (match.index > last) parts.push(text.slice(last, match.index));
+    const Icon = kind === 'pin' ? MapPin : BookOpen;
     parts.push(
       <Link
-        key={`${match[1]}-${match.index}`}
-        href={`/?pin=${match[1]}`}
+        key={`${id}-${match.index}`}
+        href={kind === 'pin' ? `/?pin=${id}` : `/resources?res=${id}`}
         onClick={onNavigate}
         className="inline-flex items-center gap-0.5 rounded-full bg-[var(--primary)]/10 px-1.5 py-0.5 text-[var(--primary)] hover:underline"
       >
-        <MapPin className="h-3 w-3 shrink-0" />
-        {match[2]}
+        <Icon className="h-3 w-3 shrink-0" />
+        {label}
       </Link>,
     );
     last = match.index + match[0].length;

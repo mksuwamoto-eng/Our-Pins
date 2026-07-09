@@ -2,17 +2,28 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server';
 
 /**
  * Build the Concierge's entire knowledge base as one text block: every live
- * pin with its creator's note and all member vouches, plus member bios and
- * active noticeboard posts. The community corpus is small (~150 members), so
+ * pin with its creator's note and all member vouches, plus member bios,
+ * active noticeboard posts, and library resources (excerpt-only — see
+ * below). The community corpus is small (~150 members), so
  * we skip vector retrieval entirely and give Claude the full picture —
  * grounding is total, and prompt caching makes repeat queries within the TTL
  * cheap. Bios are capped at 500 chars and board posts expire after 30 days,
  * so both sections stay bounded.
  */
+/**
+ * Resources are permanent, so unlike board posts nothing expires out of this
+ * section. Two bounds keep it flat anyway: the body is cut to an excerpt
+ * (matching needs a scent of the content, and Parea is a librarian — she
+ * points at posts, she doesn't teach from them, so the full how-to steps
+ * deliberately never enter the prompt), and at ~150 members the post count
+ * stays small for years.
+ */
+const RESOURCE_EXCERPT_CHARS = 400;
+
 export async function buildCorpus(): Promise<string> {
   const admin = createSupabaseAdminClient();
 
-  const [{ data: pins }, { data: vouches }, { data: profiles }, { data: categories }, { data: posts }] =
+  const [{ data: pins }, { data: vouches }, { data: profiles }, { data: categories }, { data: posts }, { data: resources }] =
     await Promise.all([
       admin
         .from('pins')
@@ -27,6 +38,11 @@ export async function buildCorpus(): Promise<string> {
         .select('id, category, title, body, created_by, created_at')
         .is('archived_at', null)
         .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false }),
+      admin
+        .from('resources')
+        .select('id, category, title, body, url, translations, created_by, created_at')
+        .is('archived_at', null)
         .order('created_at', { ascending: false }),
     ]);
 
@@ -72,6 +88,32 @@ export async function buildCorpus(): Promise<string> {
     ].join('\n');
   });
 
+  const resourceBlocks = (resources ?? []).map((r) => {
+    const author = nameOf.get(r.created_by) ?? 'A former member';
+    // Both language versions of the title go in so a Greek question matches
+    // an English-titled post and vice versa. The body is excerpt-only (see
+    // RESOURCE_EXCERPT_CHARS above).
+    const tr = r.translations as { title?: { el?: string; en?: string } } | null;
+    const altTitle = [tr?.title?.el, tr?.title?.en].find((t) => t && t.trim() !== r.title.trim());
+    // Cut on code points, not UTF-16 units — slicing through a surrogate pair
+    // would put a lone surrogate in the prompt, which the API rejects (and one
+    // bad permanent post would break every concierge query).
+    const excerpt =
+      r.body.length > RESOURCE_EXCERPT_CHARS
+        ? `${[...r.body].slice(0, RESOURCE_EXCERPT_CHARS).join('')}…`
+        : r.body;
+    const lines = [
+      `RESOURCE id=${r.id}`,
+      `Category: ${r.category}`,
+      `Title: ${r.title}`,
+    ];
+    if (altTitle) lines.push(`Also titled: ${altTitle}`);
+    if (r.url) lines.push(`Link: ${r.url}`);
+    lines.push(`Shared by ${author} on ${r.created_at.slice(0, 10)}`);
+    lines.push(`Excerpt (for matching only — NOT the full content): "${excerpt}"`);
+    return lines.join('\n');
+  });
+
   const sections = [`=== PLACES (pins & vouches) ===\n\n${blocks.join('\n\n')}`];
   if (bioBlocks.length) {
     sections.push(`=== MEMBERS (self-written bios) ===\n\n${bioBlocks.join('\n\n')}`);
@@ -79,6 +121,11 @@ export async function buildCorpus(): Promise<string> {
   if (postBlocks.length) {
     sections.push(
       `=== NOTICEBOARD (current community announcements: jobs, housing, for sale, events) ===\n\n${postBlocks.join('\n\n')}`,
+    );
+  }
+  if (resourceBlocks.length) {
+    sections.push(
+      `=== RESOURCES (permanent member-posted library: how-tos, things to watch, things to read) ===\n\n${resourceBlocks.join('\n\n')}`,
     );
   }
   return sections.join('\n\n');

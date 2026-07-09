@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 import { askParea, type AskError } from '@/lib/concierge/ask';
-import { PIN_MARKER } from '@/lib/concierge/markers';
+import { PIN_MARKER, RES_MARKER } from '@/lib/concierge/markers';
 import {
   replyLineMessage,
   verifyLineSignature,
@@ -57,29 +57,48 @@ const USAGE_HINT_REPLY =
 const INTRO_REPLY = `Γεια σας! I’m Parea, the Our Pins concierge for Greeks of Japan. Ask me for places the community has vouched for — try "πού για καλό καφέ;" or "any good restaurants in Tokyo?" — and I’ll answer with who recommended what. In the group chat, start your message with @parea (or mention me). I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
 
 /**
- * Render [[pin:<id>|<name>]] markers as "name (Google Maps URL)" — in LINE,
- * a place link should open navigation, not the web app. Falls back to the
- * app deep-link if the pin can't be found.
+ * Replace one marker kind with "name (url)" text. `lookup` resolves the ids
+ * that exist in the DB — the DB name/title is used over the model's marker
+ * text, because a prompt-injected corpus could otherwise put attacker-chosen
+ * lure text next to a legitimate URL. Unknown ids fall back to the app
+ * deep-link (their label is the model's text; the URL is still ours).
  */
-async function markersToMapLinks(answer: string): Promise<string> {
-  const ids = [...answer.matchAll(PIN_MARKER)].map((m) => m[1]);
+async function markersToLinks(
+  answer: string,
+  marker: RegExp,
+  lookup: (ids: string[]) => Promise<Map<string, string>>,
+  fallbackUrl: (id: string) => string,
+): Promise<string> {
+  const ids = [...answer.matchAll(marker)].map((m) => m[1]);
   if (!ids.length) return answer;
+  const byId = await lookup([...new Set(ids)]);
+  return answer.replace(marker, (_, id, label) => byId.get(id) ?? `${label} (${fallbackUrl(id)})`);
+}
+
+/** [[pin:…]] → "name (Google Maps URL)": in LINE a place should open navigation, not the web app. */
+async function pinLookup(ids: string[]): Promise<Map<string, string>> {
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from('pins')
     .select('id, name, google_place_id, lat, lng')
     .in('id', ids);
-  const byId = new Map((data ?? []).map((p) => [p.id, p]));
-  return answer.replace(PIN_MARKER, (_, id, name) => {
-    const pin = byId.get(id);
-    if (!pin) return `${name} (${publicEnv.NEXT_PUBLIC_SITE_URL}/?pin=${id})`;
-    const url = pin.google_place_id
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pin.name)}&query_place_id=${encodeURIComponent(pin.google_place_id)}`
-      : `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
-    // DB name, not the model's marker text — a prompt-injected corpus could
-    // otherwise put attacker-chosen lure text next to a legitimate URL.
-    return `${pin.name} (${url})`;
-  });
+  return new Map(
+    (data ?? []).map((pin) => {
+      const url = pin.google_place_id
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pin.name)}&query_place_id=${encodeURIComponent(pin.google_place_id)}`
+        : `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`;
+      return [pin.id, `${pin.name} (${url})`];
+    }),
+  );
+}
+
+/** [[res:…]] → "title (app URL)": resources live only in the app. ?res= (not #) survives the sign-in redirect. */
+async function resourceLookup(ids: string[]): Promise<Map<string, string>> {
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin.from('resources').select('id, title').in('id', ids);
+  return new Map(
+    (data ?? []).map((r) => [r.id, `${r.title} (${publicEnv.NEXT_PUBLIC_SITE_URL}/resources?res=${r.id})`]),
+  );
 }
 
 /**
@@ -113,7 +132,14 @@ async function answerQuestion(input: {
     userId: input.userId,
     lineUserId: input.lineUserId,
   });
-  const text = result.ok ? await markersToMapLinks(result.answer) : ERROR_REPLY[result.error];
+  const text = result.ok
+    ? await markersToLinks(
+        await markersToLinks(result.answer, PIN_MARKER, pinLookup, (id) => `${publicEnv.NEXT_PUBLIC_SITE_URL}/?pin=${id}`),
+        RES_MARKER,
+        resourceLookup,
+        (id) => `${publicEnv.NEXT_PUBLIC_SITE_URL}/resources?res=${id}`,
+      )
+    : ERROR_REPLY[result.error];
   await replyLineMessage({
     replyToken: input.replyToken,
     text,

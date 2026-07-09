@@ -56,7 +56,8 @@ export async function GET(req: Request) {
     .eq('week_start', digest.weekStart)
     .in('group_id', targets);
   const alreadyDone = new Set((done ?? []).map((d) => d.group_id));
-  const itemCount = digest.counts.pins + digest.counts.posts + digest.counts.members;
+  const itemCount =
+    digest.counts.pins + digest.counts.posts + digest.counts.resources + digest.counts.members;
 
   // Groups are independent — one failing push must not block the others.
   const results = await Promise.allSettled(
