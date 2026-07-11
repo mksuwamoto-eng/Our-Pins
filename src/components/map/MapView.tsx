@@ -50,6 +50,9 @@ export function MapView({ initialPins, categories, members }: Props) {
   // local state because they have no shareable ID. Pin selections live in the
   // URL (?pin=<id>) so they survive reloads and can be shared/back-buttoned.
   const [placeSelection, setPlaceSelection] = useState<SheetSelection>(null);
+  // Pin created this session — the sheet flips to it after save and highlights
+  // its (otherwise easily-missed) photo uploader.
+  const [justSavedPinId, setJustSavedPinId] = useState<string | null>(null);
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [mapLoadFailed, setMapLoadFailed] = useState(false);
   const searchParams = useSearchParams();
@@ -88,6 +91,7 @@ export function MapView({ initialPins, categories, members }: Props) {
   function clearSelection() {
     routerRef.current.replace('/', { scroll: false });
     setPlaceSelection(null);
+    setJustSavedPinId(null);
   }
 
   const categoryById = useMemo(() => {
@@ -229,6 +233,7 @@ export function MapView({ initialPins, categories, members }: Props) {
 
   function handlePinSaved(p: Pin) {
     setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
+    setJustSavedPinId(p.id);
     selectPin(p.id);
   }
 
@@ -266,6 +271,7 @@ export function MapView({ initialPins, categories, members }: Props) {
       <PinSheet
         selection={selection}
         categories={categories}
+        justSavedPinId={justSavedPinId}
         onClose={clearSelection}
         onPinSaved={handlePinSaved}
         onPinUpdated={handlePinUpdated}

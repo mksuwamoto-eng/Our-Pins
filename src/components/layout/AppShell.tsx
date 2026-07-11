@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { HelpCircle, ScrollText } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { getServerEnv } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
-import { FeedbackButton } from '@/components/feedback/FeedbackButton';
+import { MobileNav } from './MobileNav';
+import { HelpMenu } from './HelpMenu';
 
 export async function AppShell({ children }: { children: ReactNode }) {
   const t = await getTranslations('app');
@@ -17,8 +17,6 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const tMembers = await getTranslations('members');
   const tBoard = await getTranslations('board');
   const tResources = await getTranslations('resources');
-  const tGuidelines = await getTranslations('guidelines');
-  const tGuide = await getTranslations('guide');
 
   const { COMMUNITY_FILES_URL } = getServerEnv();
 
@@ -56,10 +54,9 @@ export async function AppShell({ children }: { children: ReactNode }) {
           />
           <span className="hidden min-[440px]:inline">{t('name')}</span>
         </Link>
-        {/* Links scroll horizontally on narrow screens; the toggles below are
-            pinned outside this scroll region so they never get pushed
-            off-screen on phone widths. */}
-        <nav className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto whitespace-nowrap text-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Desktop inline nav. On phones this is hidden and the burger (in the
+            controls cluster) takes over — see MobileNav. */}
+        <nav className="hidden min-w-0 flex-1 items-center gap-3 whitespace-nowrap text-sm md:flex">
           <Link href="/activity" className="shrink-0">{tActivity('title')}</Link>
           <Link href="/board" className="shrink-0">{tBoard('navTitle')}</Link>
           <Link href="/resources" className="shrink-0">{tResources('navTitle')}</Link>
@@ -80,25 +77,11 @@ export async function AppShell({ children }: { children: ReactNode }) {
           ) : null}
           <Link href="/settings" className="shrink-0">{tSettings('title')}</Link>
         </nav>
-        {/* Always-visible controls, pinned to the right edge. */}
+        {/* Always-visible controls, pinned to the right edge. The burger only
+            renders on phones (md:hidden); Help/language/theme are always on. */}
         <span className="flex shrink-0 items-center gap-3 border-l border-[var(--border)] pl-3">
-          <Link
-            href="/guide"
-            aria-label={tGuide('navTitle')}
-            title={tGuide('navTitle')}
-            className="text-[var(--muted)] hover:text-[var(--foreground)]"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </Link>
-          <Link
-            href="/guidelines"
-            aria-label={tGuidelines('navTitle')}
-            title={tGuidelines('navTitle')}
-            className="text-[var(--muted)] hover:text-[var(--foreground)]"
-          >
-            <ScrollText className="h-5 w-5" />
-          </Link>
-          <FeedbackButton />
+          <MobileNav filesUrl={COMMUNITY_FILES_URL ?? null} isAdmin={userRole === 'admin'} />
+          <HelpMenu />
           <LanguageToggle />
           <ThemeToggle />
         </span>

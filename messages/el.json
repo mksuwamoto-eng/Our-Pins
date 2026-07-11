@@ -5,6 +5,13 @@
     "files": "Αρχεία",
     "filesTooltip": "Άνοιγμα του κοινού Google Drive (τα μέλη μπορούν να ανεβάζουν)"
   },
+  "header": {
+    "openMenu": "Μενού",
+    "help": "Βοήθεια & σχόλια",
+    "howItWorks": "Πώς λειτουργεί",
+    "guidelines": "Κανόνες κοινότητας",
+    "feedback": "Στείλτε σχόλια"
+  },
   "auth": {
     "signInTitle": "Καλώς ήρθες πίσω",
     "signInWithLine": "Σύνδεση με LINE",
@@ -124,7 +131,10 @@
     "pickPlaceError": "Διάλεξε ένα μέρος από τα αποτελέσματα της αναζήτησης.",
     "backToMap": "Πίσω στον χάρτη",
     "translated": "μετάφραση",
-    "showTranslation": "δες τη μετάφραση"
+    "showTranslation": "δες τη μετάφραση",
+    "photosTitle": "Φωτογραφίες",
+    "photosCreatorHint": "Πρόσθεσε φωτογραφίες για να δουν κι άλλοι αυτό το μέρος.",
+    "photosAfterSave": "Θα μπορείς να προσθέσεις φωτογραφίες αμέσως μετά την αποθήκευση."
   },
   "members": {
     "title": "Μέλη",

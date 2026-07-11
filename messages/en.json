@@ -5,6 +5,13 @@
     "files": "Files",
     "filesTooltip": "Open shared Google Drive (members can upload)"
   },
+  "header": {
+    "openMenu": "Menu",
+    "help": "Help & feedback",
+    "howItWorks": "How it works",
+    "guidelines": "Community guidelines",
+    "feedback": "Send feedback"
+  },
   "auth": {
     "signInTitle": "Welcome back",
     "signInWithLine": "Sign in with LINE",
@@ -124,7 +131,10 @@
     "pickPlaceError": "Pick a place from the search results.",
     "backToMap": "Back to map",
     "translated": "translated",
-    "showTranslation": "show translation"
+    "showTranslation": "show translation",
+    "photosTitle": "Photos",
+    "photosCreatorHint": "Add photos so others can see this place.",
+    "photosAfterSave": "You'll be able to add photos right after saving."
   },
   "members": {
     "title": "Members",

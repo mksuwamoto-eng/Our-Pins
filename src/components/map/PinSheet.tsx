@@ -31,6 +31,8 @@ interface Props {
   onPinSaved: (pin: Pin) => void;
   onPinDeleted?: (pinId: string) => void;
   onPinUpdated?: (pin: Pin) => void;
+  /** Id of the pin just created this session — highlights its photo uploader. */
+  justSavedPinId?: string | null;
 }
 
 export function PinSheet({
@@ -40,6 +42,7 @@ export function PinSheet({
   onPinSaved,
   onPinDeleted,
   onPinUpdated,
+  justSavedPinId,
 }: Props) {
   const tCommon = useTranslations('common');
   const open = selection !== null;
@@ -67,6 +70,7 @@ export function PinSheet({
               <ExistingPinView
                 pin={selection.pin}
                 categories={categories}
+                promptPhotos={selection.pin.id === justSavedPinId}
                 onDeleted={(pinId) => {
                   onPinDeleted?.(pinId);
                   onClose();
@@ -193,11 +197,13 @@ function ExistingPinView({
   categories,
   onDeleted,
   onUpdated,
+  promptPhotos = false,
 }: {
   pin: Pin;
   categories: Category[];
   onDeleted?: (pinId: string) => void;
   onUpdated?: (pin: Pin) => void;
+  promptPhotos?: boolean;
 }) {
   const t = useTranslations('pin');
   const tc = useTranslations('categories');
@@ -330,6 +336,7 @@ function ExistingPinView({
         pinId={pin.id}
         canUpload={currentUserId === pin.created_by}
         canDelete={canEdit}
+        highlight={promptPhotos}
       />
 
       {placeDetails ? (

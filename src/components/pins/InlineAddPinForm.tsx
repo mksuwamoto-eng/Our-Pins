@@ -113,6 +113,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
       >
         {pending ? tCommon('loading') : t('saveAndVouch')}
       </button>
+      <p className="text-center text-xs text-[var(--muted)]">{t('photosAfterSave')}</p>
     </form>
   );
 }

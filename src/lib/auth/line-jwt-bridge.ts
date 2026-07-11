@@ -45,7 +45,7 @@ export function buildLineAuthorizeUrl(input: {
     client_id: env.LINE_CHANNEL_ID,
     redirect_uri: input.redirectUri,
     state: input.state,
-    scope: 'openid profile email',
+    scope: 'openid profile',
     nonce: input.nonce,
   });
   if (input.codeChallenge) {

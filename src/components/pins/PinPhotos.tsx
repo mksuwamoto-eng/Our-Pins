@@ -1,12 +1,13 @@
 'use client';
 
 import imageCompression from 'browser-image-compression';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import type { PinPhoto } from '@/lib/supabase/types';
+import { cn } from '@/lib/utils';
 
 const MAX_PHOTOS = 4;
 
@@ -43,10 +44,13 @@ export function PinPhotos({
   pinId,
   canUpload,
   canDelete,
+  highlight = false,
 }: {
   pinId: string;
   canUpload: boolean;
   canDelete: boolean;
+  /** Draw attention right after pin creation: scroll into view + flash a ring. */
+  highlight?: boolean;
 }) {
   const t = useTranslations('pin');
   const tCommon = useTranslations('common');
@@ -54,12 +58,25 @@ export function PinPhotos({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [flash, setFlash] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   const { data: photos = EMPTY } = useQuery({
     queryKey: ['pin-photos', pinId],
     queryFn: () => fetchPinPhotos(pinId),
     staleTime: 60_000,
   });
+
+  // On the freshly-created pin, pull the (otherwise easily-missed) photo
+  // uploader into view and flash a ring so the creator notices they can add
+  // photos now.
+  useEffect(() => {
+    if (!highlight) return;
+    sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setFlash(true);
+    const id = setTimeout(() => setFlash(false), 2500);
+    return () => clearTimeout(id);
+  }, [highlight]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -108,9 +125,46 @@ export function PinPhotos({
   const showAdd = canUpload && photos.length < MAX_PHOTOS;
   if (!photos.length && !showAdd) return null;
 
+  // Creator, no photos yet → a prominent full-width prompt instead of the tiny
+  // dashed tile (which read as decorative and got missed).
+  const emptyCreatorState = canUpload && photos.length === 0;
+
   return (
-    <div className="mt-4">
-      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      ref={sectionRef}
+      className={cn(
+        'mt-4 scroll-mt-4 rounded-xl transition-shadow',
+        flash && 'shadow-[0_0_0_2px_var(--primary)]',
+      )}
+    >
+      <h3 className="text-sm font-medium">{t('photosTitle')}</h3>
+      {emptyCreatorState ? (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-[var(--muted)]">{t('photosCreatorHint')}</p>
+          <label className="flex h-24 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] text-sm text-[var(--muted)] hover:bg-[var(--surface-subtle)]">
+            {busy ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <ImagePlus className="h-5 w-5" />
+                <span>{t('addPhotos')}</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFile}
+              disabled={busy}
+            />
+          </label>
+          {error ? (
+            <p className="text-xs text-[var(--color-terracotta-500)]">{error}</p>
+          ) : null}
+        </div>
+      ) : (
+        <>
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {photos.map((p) => (
           <div key={p.id} className="relative shrink-0">
             <button type="button" onClick={() => setLightbox(p.url)} className="block">
@@ -156,6 +210,8 @@ export function PinPhotos({
         ) : null}
       </div>
       {error ? <p className="mt-1 text-xs text-[var(--color-terracotta-500)]">{error}</p> : null}
+        </>
+      )}
 
       {lightbox ? (
         <div
