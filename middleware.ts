@@ -76,6 +76,9 @@ export async function middleware(request: NextRequest) {
   if (
     !onboarded &&
     pathname !== '/onboarding' &&
+    // The onboarding consent checkbox links to /guidelines — let members read
+    // it before they've finished onboarding.
+    pathname !== '/guidelines' &&
     !pathname.startsWith('/api/onboarding') &&
     !pathname.startsWith('/api/profile/avatar')
   ) {

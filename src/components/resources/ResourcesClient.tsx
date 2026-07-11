@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { LocalizedText } from '@/components/i18n/LocalizedText';
+import { CategorySection } from '@/components/common/CategorySection';
 import { RESOURCE_CATEGORIES } from '@/lib/schemas/resource';
 import { relativeTime } from '@/lib/time';
 import type { Resource, ResourceCategory } from '@/lib/supabase/types';
@@ -82,8 +83,9 @@ function ResourceForm({
         url: values.url.trim(),
       });
       if (!ok) setError(failedLabel);
-    } catch {
-      setError(failedLabel);
+    } catch (err) {
+      // A thrown message (e.g. a cap hit) is user-facing; else stay generic.
+      setError(err instanceof Error && err.message ? err.message : failedLabel);
     } finally {
       setBusy(false);
     }
@@ -172,13 +174,24 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
   const t = useTranslations('resources');
   const locale = useLocale();
   const router = useRouter();
-  const [filter, setFilter] = useState<ResourceCategory | null>(null);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  // Which rows are expanded to full detail. Compact-by-default keeps the list
+  // short; a category section can also be folded away via CategorySection.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
   const searchParams = useSearchParams();
   const resFromUrl = searchParams.get('res');
   const routerRef = useRef(router);
@@ -191,6 +204,7 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
   useEffect(() => {
     if (!resFromUrl) return;
     setHighlightId(resFromUrl);
+    setExpandedIds((prev) => new Set(prev).add(resFromUrl));
     routerRef.current.replace('/resources', { scroll: false });
     // Post-paint: the list is rendered by now (server component data).
     setTimeout(() => document.getElementById(resFromUrl)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -204,9 +218,11 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
     [r.title, r.body, r.translations?.title?.el, r.translations?.title?.en, r.translations?.body?.el, r.translations?.body?.en].some(
       (s) => s?.toLowerCase().includes(q),
     );
-  const visible = resources.filter(
-    (v) => (!filter || v.resource.category === filter) && matchesSearch(v.resource),
-  );
+  const visible = resources.filter((v) => matchesSearch(v.resource));
+  const groups = RESOURCE_CATEGORIES.map((category) => ({
+    category,
+    items: visible.filter((v) => v.resource.category === category),
+  })).filter((g) => g.items.length > 0);
 
   async function submitTo(path: string, method: 'POST' | 'PATCH', values: FormValues) {
     const res = await fetch(path, {
@@ -214,7 +230,15 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(values),
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      // Surface the anti-spam cap reason (429) as a helpful message; other
+      // failures fall through to the form's generic failedLabel.
+      if (res.status === 429) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error === 'active_limit' ? t('limitActive') : t('limitDaily'));
+      }
+      return false;
+    }
     router.refresh();
     return true;
   }
@@ -236,6 +260,112 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
     }
   }
 
+  // Compact row that expands to full detail on tap; the edit form replaces the
+  // row inline. Rendered inside each category section.
+  function renderRow({ resource: r, authorName, authorAvatarUrl }: ResourceView) {
+    const canManage = isAdmin || r.created_by === meId;
+    if (editingId === r.id) {
+      return (
+        <div key={r.id}>
+          <ResourceForm
+            initial={{ category: r.category, title: r.title, body: r.body, url: r.url ?? '' }}
+            submitLabel={t('save')}
+            busyLabel={t('saving')}
+            failedLabel={t('editFailed')}
+            onSubmit={async (values) => {
+              const ok = await submitTo(`/api/resources/${r.id}`, 'PATCH', values);
+              if (ok) setEditingId(null);
+              return ok;
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        </div>
+      );
+    }
+    const expanded = expandedIds.has(r.id);
+    const titleText = r.translations?.title?.[locale === 'el' ? 'el' : 'en'] || r.title;
+    return (
+      <div
+        key={r.id}
+        id={r.id}
+        className={cn('scroll-mt-4 rounded-lg', highlightId === r.id && 'ring-2 ring-[var(--primary)]')}
+      >
+        <button
+          type="button"
+          onClick={() => toggleExpand(r.id)}
+          aria-expanded={expanded}
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-[var(--surface-subtle)]"
+        >
+          <span className={cn('min-w-0 flex-1 text-sm font-medium', !expanded && 'truncate')}>
+            {titleText}
+          </span>
+          {authorAvatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={authorAvatarUrl} alt="" className="h-5 w-5 shrink-0 rounded-full object-cover" />
+          ) : (
+            <div className="h-5 w-5 shrink-0 rounded-full bg-[var(--color-washi-200)]" />
+          )}
+          <time className="shrink-0 text-xs text-[var(--muted)]">{relativeTime(r.created_at, locale)}</time>
+        </button>
+        {expanded ? (
+          <div className="space-y-1.5 px-2 pb-2">
+            <LocalizedText
+              original={r.body}
+              translations={r.translations?.body ?? null}
+              className="whitespace-pre-wrap text-sm text-[var(--fg)]"
+            />
+            {r.url ? (
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-sm text-[var(--primary)] underline decoration-dotted"
+              >
+                {hostOf(r.url)} <span aria-hidden="true">↗</span>
+              </a>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+              {authorName ? (
+                <Link href={`/members/${r.created_by}`} className="hover:underline">
+                  {authorName}
+                </Link>
+              ) : (
+                <span>{t('formerMember')}</span>
+              )}
+              {r.updated_at > r.created_at ? (
+                <>
+                  <span>·</span>
+                  <span className="italic">{t('updated', { when: relativeTime(r.updated_at, locale) })}</span>
+                </>
+              ) : null}
+              {canManage ? (
+                <>
+                  <span>·</span>
+                  <button
+                    onClick={() => {
+                      setEditingId(r.id);
+                      setError(null);
+                    }}
+                    className="underline decoration-dotted"
+                  >
+                    {t('edit')}
+                  </button>
+                  <button
+                    onClick={() => onArchive(r.id)}
+                    disabled={archivingId === r.id}
+                    className="underline decoration-dotted disabled:opacity-60"
+                  >
+                    {t('remove')}
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 space-y-4">
       <input
@@ -245,34 +375,6 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
         placeholder={t('searchPlaceholder')}
         className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
       />
-
-      <div className="flex flex-wrap items-center gap-1">
-        <button
-          onClick={() => setFilter(null)}
-          className={cn(
-            'rounded-full border px-3 py-1 text-xs',
-            filter === null
-              ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
-              : 'border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]',
-          )}
-        >
-          {t('allCategories')}
-        </button>
-        {RESOURCE_CATEGORIES.map((c) => (
-          <button
-            key={c}
-            onClick={() => setFilter(filter === c ? null : c)}
-            className={cn(
-              'rounded-full border px-3 py-1 text-xs',
-              filter === c
-                ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
-                : 'border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]',
-            )}
-          >
-            {t(`category_${c}`)}
-          </button>
-        ))}
-      </div>
 
       {error ? <p className="text-sm text-[var(--color-terracotta-500)]">{error}</p> : null}
 
@@ -305,116 +407,28 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
       {visible.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">{resources.length === 0 ? t('empty') : t('noMatches')}</p>
       ) : (
-        <ul className="space-y-3">
-          {visible.map(({ resource: r, authorName, authorAvatarUrl }) => {
-            const canManage = isAdmin || r.created_by === meId;
-            if (editingId === r.id) {
-              return (
-                <li key={r.id}>
-                  <ResourceForm
-                    initial={{ category: r.category, title: r.title, body: r.body, url: r.url ?? '' }}
-                    submitLabel={t('save')}
-                    busyLabel={t('saving')}
-                    failedLabel={t('editFailed')}
-                    onSubmit={async (values) => {
-                      const ok = await submitTo(`/api/resources/${r.id}`, 'PATCH', values);
-                      if (ok) setEditingId(null);
-                      return ok;
-                    }}
-                    onCancel={() => setEditingId(null)}
-                  />
-                </li>
-              );
-            }
-            return (
-              // id targets the ?res=<id> deep-link scroll above.
-              <li
-                key={r.id}
-                id={r.id}
-                className={cn(
-                  'card scroll-mt-4 p-4 transition-shadow',
-                  highlightId === r.id && 'ring-2 ring-[var(--primary)]',
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <span
-                      className={cn(
-                        'inline-block rounded-full px-2 py-0.5 text-xs font-medium',
-                        CATEGORY_COLORS[r.category],
-                      )}
-                    >
-                      {t(`category_${r.category}`)}
-                    </span>
-                    <LocalizedText
-                      original={r.title}
-                      translations={r.translations?.title ?? null}
-                      className="mt-1.5 font-medium"
-                    />
-                    <LocalizedText
-                      original={r.body}
-                      translations={r.translations?.body ?? null}
-                      className="mt-1 whitespace-pre-wrap text-sm text-[var(--fg)]"
-                    />
-                    {r.url ? (
-                      <a
-                        href={r.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1.5 inline-block text-sm text-[var(--primary)] underline decoration-dotted"
-                      >
-                        {hostOf(r.url)} <span aria-hidden="true">↗</span>
-                      </a>
-                    ) : null}
-                  </div>
-                  {canManage ? (
-                    <span className="flex shrink-0 gap-2.5">
-                      <button
-                        onClick={() => {
-                          setEditingId(r.id);
-                          setError(null);
-                        }}
-                        className="text-xs text-[var(--muted)] underline decoration-dotted"
-                      >
-                        {t('edit')}
-                      </button>
-                      <button
-                        onClick={() => onArchive(r.id)}
-                        disabled={archivingId === r.id}
-                        className="text-xs text-[var(--muted)] underline decoration-dotted disabled:opacity-60"
-                      >
-                        {t('remove')}
-                      </button>
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
-                  {authorAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={authorAvatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-6 w-6 rounded-full bg-[var(--color-washi-200)]" />
+        <div className="space-y-3">
+          {groups.map((g) => (
+            <CategorySection
+              key={g.category}
+              count={g.items.length}
+              // A search or a deep-link target pops the section open.
+              forceOpen={!!q || g.items.some((v) => v.resource.id === highlightId)}
+              header={
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 text-xs font-medium',
+                    CATEGORY_COLORS[g.category],
                   )}
-                  {authorName ? (
-                    <Link href={`/members/${r.created_by}`} className="hover:underline">
-                      {authorName}
-                    </Link>
-                  ) : (
-                    <span>{t('formerMember')}</span>
-                  )}
-                  <span>·</span>
-                  <span>{relativeTime(r.created_at, locale)}</span>
-                  {r.updated_at > r.created_at ? (
-                    <>
-                      <span>·</span>
-                      <span className="italic">{t('updated', { when: relativeTime(r.updated_at, locale) })}</span>
-                    </>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                >
+                  {t(`category_${g.category}`)}
+                </span>
+              }
+            >
+              {g.items.map((v) => renderRow(v))}
+            </CategorySection>
+          ))}
+        </div>
       )}
     </div>
   );

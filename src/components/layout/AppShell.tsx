@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { HelpCircle } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { getServerEnv } from '@/lib/env';
@@ -16,6 +17,8 @@ export async function AppShell({ children }: { children: ReactNode }) {
   const tMembers = await getTranslations('members');
   const tBoard = await getTranslations('board');
   const tResources = await getTranslations('resources');
+  const tGuidelines = await getTranslations('guidelines');
+  const tGuide = await getTranslations('guide');
 
   const { COMMUNITY_FILES_URL } = getServerEnv();
 
@@ -61,6 +64,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
           <Link href="/board" className="shrink-0">{tBoard('navTitle')}</Link>
           <Link href="/resources" className="shrink-0">{tResources('navTitle')}</Link>
           <Link href="/members" className="shrink-0">{tMembers('title')}</Link>
+          <Link href="/guidelines" className="shrink-0">{tGuidelines('navTitle')}</Link>
           {COMMUNITY_FILES_URL ? (
             <a
               href={COMMUNITY_FILES_URL}
@@ -79,6 +83,14 @@ export async function AppShell({ children }: { children: ReactNode }) {
         </nav>
         {/* Always-visible controls, pinned to the right edge. */}
         <span className="flex shrink-0 items-center gap-3 border-l border-[var(--border)] pl-3">
+          <Link
+            href="/guide"
+            aria-label={tGuide('navTitle')}
+            title={tGuide('navTitle')}
+            className="text-[var(--muted)] hover:text-[var(--foreground)]"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </Link>
           <FeedbackButton />
           <LanguageToggle />
           <ThemeToggle />

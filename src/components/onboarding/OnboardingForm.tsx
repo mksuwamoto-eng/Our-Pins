@@ -10,6 +10,7 @@ import { AvatarUploader } from './AvatarUploader';
 
 interface Props {
   userId: string;
+  linePicture?: string | null;
   initial: {
     displayName: string;
     displayPref: 'avatar_only' | 'avatar_name';
@@ -18,7 +19,7 @@ interface Props {
   };
 }
 
-export function OnboardingForm({ userId, initial }: Props) {
+export function OnboardingForm({ userId, linePicture, initial }: Props) {
   const t = useTranslations('onboarding');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -58,6 +59,8 @@ export function OnboardingForm({ userId, initial }: Props) {
       <Field label={t('avatar')} help={t('avatarHelp')} error={errors.avatarPath?.message}>
         <AvatarUploader
           userId={userId}
+          linePicture={linePicture}
+          lineLabel={t('useLinePhoto')}
           onChange={(path) => form.setValue('avatarPath', path, { shouldValidate: true })}
         />
       </Field>
@@ -96,7 +99,20 @@ export function OnboardingForm({ userId, initial }: Props) {
       <Field error={errors.acceptedGuidelines?.message}>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" {...form.register('acceptedGuidelines')} className="mt-1" />
-          <span>{t('guidelinesAccept')}</span>
+          <span>
+            {t.rich('guidelinesAccept', {
+              link: (chunks) => (
+                <a
+                  href="/guidelines"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--primary)] underline"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
+          </span>
         </label>
       </Field>
 

@@ -89,8 +89,9 @@ your domain.
 
 - Pin photos and avatars live in a private Supabase bucket; the app fetches
   them via short-lived signed URLs only. A leaked URL expires in an hour.
-- LINE/Google profile pictures shown only as one-click defaults at onboarding
-  — never persisted unless the member confirms.
+- LINE sign-ins can one-click import their LINE profile photo at onboarding;
+  it's only copied into our bucket when the member taps the button. Google
+  sign-ins upload a photo manually (no picture default).
 - `real_name` lives in a separate `private_profiles` table that members
   cannot read — only admins (and the user themselves) can SELECT it.
 - Account deletion scrubs `private_profiles`, anonymises the user's display

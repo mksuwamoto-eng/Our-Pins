@@ -14,6 +14,7 @@ import { relativeTime } from '@/lib/time';
 import { categoryLabel } from '@/lib/i18n/category';
 import { LocalizedText } from '@/components/i18n/LocalizedText';
 import { VouchPanel } from '@/components/pins/VouchPanel';
+import { PinPhotos } from '@/components/pins/PinPhotos';
 import { InlineAddPinForm } from '@/components/pins/InlineAddPinForm';
 import { PinEditForm } from '@/components/pins/PinEditForm';
 import { PlaceInfoCard, type PlaceDetails } from './PlaceInfoCard';
@@ -324,6 +325,12 @@ function ExistingPinView({
         ) : null}
         <span className="text-sm text-[var(--muted)]">{pin.address}</span>
       </div>
+
+      <PinPhotos
+        pinId={pin.id}
+        canUpload={currentUserId === pin.created_by}
+        canDelete={canEdit}
+      />
 
       {placeDetails ? (
         <div className="mt-4">

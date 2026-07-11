@@ -287,15 +287,83 @@ hydrates, no console errors; fix: stop dev, `rm -rf .next`, restart).
 
 ---
 
+## UX + governance batch (built July 11, 2026; typecheck/lint/build pass, pending prod verification)
+
+Batch from Mako's feedback. **No new DB migrations** (`pin_photos`
+already existed from 0001). All member-facing strings localized EL/EN;
+admin panels stay English.
+
+- **Category filter dropdown** — replaced the all-17-chips row in
+  `src/components/map/FilterBar.tsx` with a multi-select popover
+  (`src/components/map/CategoryFilter.tsx`): each row shows the
+  category's own colour swatch + Lucide icon + localized label + a LIVE
+  pin count (dimmed at 0). Counts computed in MapView (`categoryCounts`,
+  grouped over loaded pins, ignores filters) and passed to FilterBar.
+  Icon-name → component map in `src/lib/categories/icons.ts` (keyed by
+  the seed's `icon` string, `MapPin` fallback). Markers were ALREADY
+  category-coloured; only the filter UI changed.
+- **Pin photo upload (old TODO #1 — DONE)** — `app/api/pins/[id]/photos`
+  POST rewritten to accept bytes via the admin client (like the avatar
+  route), enforce creator-only + ≤4/pin, pick extension from mime, and
+  insert the `pin_photos` row atomically (rolls back the storage object
+  on insert failure); DELETE now also removes the storage object.
+  Display + upload UI in `src/components/pins/PinPhotos.tsx` (client
+  compression, signed-URL thumbnail strip, lightbox, per-photo delete),
+  wired into PinSheet `ExistingPinView`. Photos show to all members;
+  upload creator-only; delete creator-or-admin. Nothing rendered
+  `pin_photos` before this.
+- **LINE avatar import** — the LINE picture was captured into
+  `user_metadata.picture` (session.ts) then never used (avatar hard-set
+  to `_pending`). Added `app/api/profile/avatar/from-line/route.ts`:
+  reads the URL from the *authenticated user's own* metadata (never the
+  request body — no SSRF), requires an https `*.line-scdn.net` URL,
+  downloads → uploads to `avatars/<uid>/profile.jpg`. Onboarding shows a
+  "Use my LINE photo" button (`AvatarUploader` `linePicture`/`lineLabel`
+  props; the page passes `user_metadata.picture`). The false README
+  privacy line was corrected (it had claimed Google too).
+- **Community guidelines** — new `/guidelines` bilingual page
+  (`guidelines` message namespace: intro + 8 numbered rules + closing),
+  linked from the header nav AND the onboarding consent checkbox (now a
+  rich-text `<link>`; `/guidelines` added to the middleware
+  not-onboarded allow-list so it's readable mid-onboarding).
+- **Anti-spam caps** — `src/lib/limits.ts` (`countUserRows`,
+  `startOfUtcDay`; constants `RESOURCE_DAILY_LIMIT=3`,
+  `RESOURCE_ACTIVE_LIMIT=10`, `BOARD_DAILY_LIMIT=5`). Enforced in the
+  resources + board POST routes via the admin client, admins exempt
+  (checked with `getCurrentClaims().user_role`); a 429 → localized
+  message surfaced in both clients. The concierge count-over-window was
+  the template.
+- **Board/Resources presentation** — flat stacked lists replaced with
+  category-grouped **collapsible sections** (`src/components/common/
+  CategorySection.tsx`; header shows a count) containing **compact
+  one-line rows that expand on tap**. Redundant filter-chip rows removed
+  (sections replace them); Resources keeps its search + the `?res=<id>`
+  deep-link (now force-opens the section and expands the row).
+- **Central moderation feed** — `/admin/moderation` now covers Pins +
+  Board posts + Resources (was pins-only), each Archive/Restore +
+  "include archived". Goes through a new admin-gated service-role route
+  `app/api/admin/moderation/route.ts` (so restore works regardless of a
+  table's per-row RLS); `AdminModerationFeed` generalized to `sections`.
+  NOTE: admins could ALREADY remove any item via its own Edit/Remove
+  (`canManage` includes `isAdmin`), and revoke already blocks access —
+  this is the central convenience, not a new capability.
+- **Explainer** — new `/guide` bilingual page (`guide` namespace, 7
+  sections + a link to /guidelines) plus a `HelpCircle` "?" link in the
+  header (AppShell, next to the toggles). The guide content was also
+  handed to Mako as paste-ready Resources how-to text (Mako seeds it
+  manually per the seed-before-announce rule; not auto-created).
+
+---
+
 ## Open issues / pending TODOs
 
 In rough priority:
 
-1. **Photo upload UI on pin add** (CLAUDE.md old item #4 — still not
-   built). The signed-URL API route exists at
-   `app/api/pins/[id]/photos/route.ts`; the client-side uploader was
-   deferred. Avatar upload (via `/api/profile/avatar` route + admin
-   client) is the template to copy from.
+1. ~~**Photo upload UI on pin add**~~ — DONE (July 11, 2026). Photos
+   route rewritten to accept bytes + enforce ≤4/creator; `PinPhotos`
+   component (upload + signed-URL gallery + lightbox + delete) wired
+   into the pin sheet. See the "UX + governance batch" section above.
+   (Pending prod verification — map-gated, like all map changes.)
 2. ~~**LINE bot group-chat mode**~~ — DECIDED (July 9, 2026): passive/
    mention-gated group Q&A stays PERMANENTLY off; the bot sits in the
    group only for the weekly digest. 1:1 chat is DONE (July 6, 2026). See

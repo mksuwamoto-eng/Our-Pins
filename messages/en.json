@@ -33,6 +33,7 @@
     "realNameHelp": "Only Mako and admins see this. Optional but appreciated.",
     "avatar": "Profile photo",
     "avatarHelp": "Required. Helps people recognise you on the map.",
+    "useLinePhoto": "Use my LINE photo",
     "displayPref": "How to appear to others",
     "displayPrefAvatarOnly": "Avatar only",
     "displayPrefAvatarName": "Avatar and name",
@@ -40,8 +41,39 @@
     "website": "Website",
     "bio": "About you",
     "bioHelp": "Tell the community a little about yourself — where you live, what you do.",
-    "guidelinesAccept": "I agree to the community guidelines",
+    "guidelinesAccept": "I agree to the <link>community guidelines</link>",
     "submit": "Continue"
+  },
+  "guidelines": {
+    "navTitle": "Guidelines",
+    "title": "Community Guidelines",
+    "intro": "Our Pins is a small, invite-only community of Greeks living in Japan.",
+    "rules": [
+      { "title": "Be kind and respectful", "body": "Treat every member like a friend of a friend. No harassment, hate, or personal attacks." },
+      { "title": "Vouch for places you actually know", "body": "A pin or a vouch means \"I've been here and I'd send a friend.\" Don't recommend places you haven't experienced yourself." },
+      { "title": "Keep it real and relevant", "body": "No spam, ads, or repeated self-promotion. Share things that genuinely help the community." },
+      { "title": "Respect people's privacy", "body": "Don't share another member's personal details, photos, or contact info without their consent." },
+      { "title": "High-stakes tips are opinions, not professional advice", "body": "Recommendations for doctors, lawyers, therapists, accountants and the like are personal experiences from members — not a substitute for qualified professional advice. Use your own judgment." },
+      { "title": "Post in good faith on the Board and Resources", "body": "Board = real needs (jobs, housing, events); Resources = lasting references. Quality over quantity." },
+      { "title": "This is a private space", "body": "Don't republish members' posts, photos, or the invite link outside the community. Only invite people you'd personally vouch for." },
+      { "title": "Admins keep the space healthy", "body": "Admins may remove content or a member's access if needed. See something off? Tell an admin." }
+    ],
+    "closing": "Questions, or something feel wrong? Message an admin. Thanks for helping keep Our Pins a place we all trust."
+  },
+  "guide": {
+    "navTitle": "Guide",
+    "title": "How Our Pins works",
+    "intro": "A quick tour of everything you can do here.",
+    "sections": [
+      { "title": "What it is", "body": "A private map of places we trust — restaurants, doctors, weekend trips and more — each vouched for by a member. If it's pinned, someone here has actually been." },
+      { "title": "Finding a place", "body": "Browse the pins on the map. Use the Categories dropdown to filter by type and see how many of each there are, then tap a pin to see who vouched and what they said." },
+      { "title": "Adding a place", "body": "Tap any spot on the map, or use the + button. If nobody's pinned it yet, pick a category and write why you'd send a friend — that's your first vouch." },
+      { "title": "Vouching and photos", "body": "On a place someone already pinned, tap \"I've been here too\" and add a comment if you like. On your own pins you can add up to four photos." },
+      { "title": "Board and Resources", "body": "The Board is for time-limited needs — jobs, housing, things for sale, events — and posts expire after 30 days. Resources is a permanent library of how-tos and things worth watching or reading." },
+      { "title": "Parea, the concierge", "body": "Tap the chat bubble to ask Parea for a recommendation. It answers only from the community's own pins, vouches, and notes, and points you to members by name." },
+      { "title": "Language and dark mode", "body": "Switch between Greek and English, or light and dark, with the toggles at the top right. Members' notes are auto-translated, with a tap to see the original." }
+    ],
+    "guidelinesLink": "Read the community guidelines"
   },
   "map": {
     "title": "Map",
@@ -52,7 +84,11 @@
     "loadError": "The map couldn't load. Check your connection and refresh.",
     "addPlaceTooltip": "Add a place not already on the map",
     "everyone": "Everyone",
-    "memberFilter": "Show pins from"
+    "memberFilter": "Show pins from",
+    "allCategories": "All categories",
+    "categoryFilter": "Filter by category",
+    "nSelected": "{count} selected",
+    "clearCategories": "Clear categories"
   },
   "pin": {
     "vouchedBy": "Vouched by",
@@ -62,6 +98,8 @@
     "vouchComment": "Comment (optional)",
     "category": "Category",
     "addPhotos": "Add photos (up to 4)",
+    "addPhoto": "Add photo",
+    "removePhoto": "Remove photo",
     "save": "Save",
     "delete": "Delete pin",
     "archive": "Archive",
@@ -123,6 +161,7 @@
     "submit": "Post",
     "posting": "Posting…",
     "postFailed": "Couldn't post — try again.",
+    "limitDaily": "You've posted several times today — please try again tomorrow.",
     "requiredFields": "Add a title and details first.",
     "cancel": "Cancel",
     "remove": "Remove",
@@ -152,6 +191,8 @@
     "submit": "Post",
     "posting": "Posting…",
     "postFailed": "Couldn't post — try again.",
+    "limitActive": "You've reached the number of resources you can keep active. Remove one to add another.",
+    "limitDaily": "You've shared a few resources today — please come back tomorrow to add more.",
     "requiredFields": "Add a title and details first.",
     "cancel": "Cancel",
     "edit": "Edit",

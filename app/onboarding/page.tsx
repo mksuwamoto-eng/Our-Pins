@@ -13,11 +13,17 @@ export default async function OnboardingPage() {
 
   const t = await getTranslations('onboarding');
 
+  // LINE sign-ins carry the LINE profile photo in user_metadata (session.ts).
+  // Surface it so onboarding can offer a one-click "Use my LINE photo".
+  const linePicture =
+    typeof user.user_metadata?.picture === 'string' ? user.user_metadata.picture : null;
+
   return (
     <main className="mx-auto max-w-xl px-6 py-10">
       <h1 className="mb-6 font-serif text-3xl">{t('title')}</h1>
       <OnboardingForm
         userId={user.id}
+        linePicture={linePicture}
         initial={{
           displayName: profile?.display_name ?? '',
           displayPref: profile?.display_pref ?? 'avatar_name',

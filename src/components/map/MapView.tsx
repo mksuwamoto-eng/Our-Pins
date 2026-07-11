@@ -96,6 +96,15 @@ export function MapView({ initialPins, categories, members }: Props) {
     return m;
   }, [categories]);
 
+  // Live count of pins per category, for the FilterBar dropdown. Counts every
+  // loaded pin (ignores the active filters) so each number is a stable "how
+  // many exist", not "how many are currently shown".
+  const categoryCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const p of pins) m[p.category_id] = (m[p.category_id] ?? 0) + 1;
+    return m;
+  }, [pins]);
+
   // Lookup table: google_place_id -> Pin (so map clicks on POIs we already
   // have a pin for resolve to the existing pin instead of "add new").
   const pinByPlaceId = useMemo(() => {
@@ -244,7 +253,7 @@ export function MapView({ initialPins, categories, members }: Props) {
           {mapLoadFailed ? t('loadError') : tCommon('loading')}
         </div>
       ) : null}
-      <FilterBar categories={categories} members={members} />
+      <FilterBar categories={categories} members={members} counts={categoryCounts} />
       <Concierge />
       <button
         onClick={() => router.push('/pins/new')}
