@@ -322,10 +322,12 @@ admin panels stay English.
   props; the page passes `user_metadata.picture`). The false README
   privacy line was corrected (it had claimed Google too).
 - **Community guidelines** — new `/guidelines` bilingual page
-  (`guidelines` message namespace: intro + 8 numbered rules + closing),
-  linked from the header nav AND the onboarding consent checkbox (now a
-  rich-text `<link>`; `/guidelines` added to the middleware
-  not-onboarded allow-list so it's readable mid-onboarding).
+  (`guidelines` message namespace: intro + 6 numbered rules + closing),
+  reachable via a `ScrollText` header icon (next to the language/theme
+  toggles — deliberately low-prominence, not a nav link) AND the
+  onboarding consent checkbox (now a rich-text `<link>`; `/guidelines`
+  added to the middleware not-onboarded allow-list so it's readable
+  mid-onboarding).
 - **Anti-spam caps** — `src/lib/limits.ts` (`countUserRows`,
   `startOfUtcDay`; constants `RESOURCE_DAILY_LIMIT=3`,
   `RESOURCE_ACTIVE_LIMIT=10`, `BOARD_DAILY_LIMIT=5`). Enforced in the

@@ -49,14 +49,12 @@
     "title": "Community Guidelines",
     "intro": "Our Pins is a small, invite-only community of Greeks living in Japan.",
     "rules": [
-      { "title": "Be kind and respectful", "body": "Treat every member like a friend of a friend. No harassment, hate, or personal attacks." },
       { "title": "Vouch for places you actually know", "body": "A pin or a vouch means \"I've been here and I'd send a friend.\" Don't recommend places you haven't experienced yourself." },
       { "title": "Keep it real and relevant", "body": "No spam, ads, or repeated self-promotion. Share things that genuinely help the community." },
       { "title": "Respect people's privacy", "body": "Don't share another member's personal details, photos, or contact info without their consent." },
       { "title": "High-stakes tips are opinions, not professional advice", "body": "Recommendations for doctors, lawyers, therapists, accountants and the like are personal experiences from members — not a substitute for qualified professional advice. Use your own judgment." },
       { "title": "Post in good faith on the Board and Resources", "body": "Board = real needs (jobs, housing, events); Resources = lasting references. Quality over quantity." },
-      { "title": "This is a private space", "body": "Don't republish members' posts, photos, or the invite link outside the community. Only invite people you'd personally vouch for." },
-      { "title": "Admins keep the space healthy", "body": "Admins may remove content or a member's access if needed. See something off? Tell an admin." }
+      { "title": "Admins keep the space healthy", "body": "Admins may remove content or a member's access if needed. See something off? Tell the admin." }
     ],
     "closing": "Questions, or something feel wrong? Message an admin. Thanks for helping keep Our Pins a place we all trust."
   },

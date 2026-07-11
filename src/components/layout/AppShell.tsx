@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ScrollText } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { getServerEnv } from '@/lib/env';
@@ -64,7 +64,6 @@ export async function AppShell({ children }: { children: ReactNode }) {
           <Link href="/board" className="shrink-0">{tBoard('navTitle')}</Link>
           <Link href="/resources" className="shrink-0">{tResources('navTitle')}</Link>
           <Link href="/members" className="shrink-0">{tMembers('title')}</Link>
-          <Link href="/guidelines" className="shrink-0">{tGuidelines('navTitle')}</Link>
           {COMMUNITY_FILES_URL ? (
             <a
               href={COMMUNITY_FILES_URL}
@@ -90,6 +89,14 @@ export async function AppShell({ children }: { children: ReactNode }) {
             className="text-[var(--muted)] hover:text-[var(--foreground)]"
           >
             <HelpCircle className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/guidelines"
+            aria-label={tGuidelines('navTitle')}
+            title={tGuidelines('navTitle')}
+            className="text-[var(--muted)] hover:text-[var(--foreground)]"
+          >
+            <ScrollText className="h-5 w-5" />
           </Link>
           <FeedbackButton />
           <LanguageToggle />
