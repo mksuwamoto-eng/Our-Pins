@@ -36,3 +36,4 @@ supabase/.env
 
 # Misc
 *.log
+story-timelapse/
