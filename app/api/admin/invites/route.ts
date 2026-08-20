@@ -25,6 +25,9 @@ export async function POST(req: Request) {
   const rows = Array.from({ length: parsed.data.count }, () => ({
     created_by: user.id,
     note: parsed.data.note ?? null,
+    max_uses: parsed.data.maxUses,
+    // Omitting expires_at falls back to the column default (14 days).
+    ...(parsed.data.expiresAt ? { expires_at: parsed.data.expiresAt } : {}),
   }));
 
   const { data, error } = await supabase.from('invites').insert(rows).select();

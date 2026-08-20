@@ -15,18 +15,22 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ toke
   const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
   if (me?.role !== 'admin') return new NextResponse('forbidden', { status: 403 });
 
+  // Revoke explicitly rather than by back-dating expires_at (which made a
+  // naturally-expired invite indistinguishable from a revoked one). Guarding on
+  // revoked_at rather than used_at means a partly-used multi-use link can still
+  // be shut off — under the old guard, one redemption made a link unrevokable.
   const { data, error } = await supabase
     .from('invites')
-    .update({ expires_at: new Date(0).toISOString() })
+    .update({ revoked_at: new Date().toISOString() })
     .eq('token', token)
-    .is('used_at', null)
+    .is('revoked_at', null)
     .select('token');
   if (error) {
     console.error('invite revoke failed:', error);
     return new NextResponse('server error', { status: 500 });
   }
-  // Token unknown, already used, or RLS-filtered — don't report a revoke
+  // Token unknown, already revoked, or RLS-filtered — don't report a revoke
   // that never happened.
-  if (!data?.length) return new NextResponse('not found or already used', { status: 404 });
+  if (!data?.length) return new NextResponse('not found or already revoked', { status: 404 });
   return NextResponse.json({ ok: true });
 }

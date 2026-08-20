@@ -123,8 +123,13 @@ export interface Invite {
   note: string | null;
   created_at: string;
   expires_at: string;
+  // On a multi-use link these are the MOST RECENT redeemer; invite_uses holds
+  // the full list (see migration 0027).
   used_by: string | null;
   used_at: string | null;
+  max_uses: number;
+  use_count: number;
+  revoked_at: string | null;
 }
 
 export interface LineGroup {
@@ -135,7 +140,12 @@ export interface LineGroup {
   left_at: string | null;
 }
 
-export type AcceptInviteResult = 'accepted' | 'already_member' | 'expired' | 'invalid';
+export type AcceptInviteResult =
+  | 'accepted'
+  | 'already_member'
+  | 'expired'
+  | 'exhausted'
+  | 'invalid';
 
 export interface JwtClaims {
   sub: string;
