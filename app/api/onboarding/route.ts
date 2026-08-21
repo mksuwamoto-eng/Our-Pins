@@ -44,6 +44,8 @@ export async function POST(req: Request) {
     display_pref: v.displayPref,
     instagram: cleanInsta,
     website: cleanWebsite,
+    linkedin: v.linkedin?.trim() || null,
+    bio: v.bio?.trim() || null,
     onboarded_at: new Date().toISOString(),
   };
   if (v.avatarPath) update.avatar_path = v.avatarPath;

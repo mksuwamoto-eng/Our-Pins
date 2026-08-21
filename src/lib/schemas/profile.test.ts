@@ -88,3 +88,38 @@ describe('resolveNames', () => {
     });
   });
 });
+
+describe('onboardingSchema — linkedin', () => {
+  const valid = {
+    firstName: 'Makoto',
+    lastName: 'Suwamoto',
+    avatarPath: 'avatars/mako.jpg',
+    displayPref: 'avatar_name' as const,
+    acceptedGuidelines: true as const,
+  };
+
+  it('adds https:// to a bare linkedin address', () => {
+    const parsed = onboardingSchema.safeParse({
+      ...valid,
+      linkedin: 'linkedin.com/in/mako',
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.linkedin).toBe('https://linkedin.com/in/mako');
+  });
+
+  it('accepts a localised linkedin host', () => {
+    expect(
+      onboardingSchema.safeParse({ ...valid, linkedin: 'https://gr.linkedin.com/in/mako' }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a non-linkedin address, which the DB CHECK would reject too', () => {
+    expect(onboardingSchema.safeParse({ ...valid, linkedin: 'example.com/mako' }).success).toBe(
+      false,
+    );
+  });
+
+  it('rejects a bio over 500 characters', () => {
+    expect(onboardingSchema.safeParse({ ...valid, bio: 'x'.repeat(501) }).success).toBe(false);
+  });
+});

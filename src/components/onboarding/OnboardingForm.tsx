@@ -12,16 +12,20 @@ import { AvatarUploader } from './AvatarUploader';
 interface Props {
   userId: string;
   linePicture?: string | null;
+  // Already-imported avatar (usually the LINE photo, brought across at sign-in).
+  avatarUrl?: string | null;
   initial: {
     firstName: string;
     lastName: string;
     displayPref: 'avatar_only' | 'avatar_name';
     instagram?: string | null;
     website?: string | null;
+    linkedin?: string | null;
+    bio?: string | null;
   };
 }
 
-export function OnboardingForm({ userId, linePicture, initial }: Props) {
+export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Props) {
   const t = useTranslations('onboarding');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -39,6 +43,8 @@ export function OnboardingForm({ userId, linePicture, initial }: Props) {
       displayPref: initial.displayPref,
       instagram: initial.instagram ?? '',
       website: initial.website ?? '',
+      linkedin: initial.linkedin ?? '',
+      bio: initial.bio ?? '',
       avatarPath: '',
     },
   });
@@ -65,11 +71,18 @@ export function OnboardingForm({ userId, linePicture, initial }: Props) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <Field label={t('avatar')} help={t('avatarHelp')} error={errors.avatarPath?.message}>
+      <Field
+        label={t('avatar')}
+        help={avatarUrl ? t('avatarHelpImported') : t('avatarHelp')}
+        error={errors.avatarPath?.message}
+      >
         <AvatarUploader
           userId={userId}
+          initialUrl={avatarUrl}
           linePicture={linePicture}
           lineLabel={t('useLinePhoto')}
+          uploadingLabel={t('photoUploading')}
+          readyLabel={t('photoReady')}
           onChange={(path) => form.setValue('avatarPath', path, { shouldValidate: true })}
         />
       </Field>
@@ -106,6 +119,24 @@ export function OnboardingForm({ userId, linePicture, initial }: Props) {
           </Field>
         ) : null}
       </div>
+
+      <Field label={t('bio')} help={t('bioHelp')} error={errors.bio?.message}>
+        <textarea
+          {...form.register('bio')}
+          rows={3}
+          placeholder={t('bioPlaceholder')}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+        />
+      </Field>
+
+      <Field label={t('linkedin')} help={t('linkedinHelp')} error={errors.linkedin?.message}>
+        <input
+          {...form.register('linkedin')}
+          inputMode="url"
+          placeholder="linkedin.com/in/yourname"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+        />
+      </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t('instagram')} error={errors.instagram?.message}>

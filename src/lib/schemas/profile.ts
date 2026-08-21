@@ -41,6 +41,25 @@ export const onboardingSchema = z
       .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
       .optional()
       .or(z.literal('').transform(() => undefined)),
+    linkedin: z
+      .string()
+      .trim()
+      .max(200)
+      // People paste whatever the browser shows, with or without a scheme.
+      // Normalise first, then check the host — the DB CHECK is https-only and
+      // linkedin.com-only, and would 500 on anything that slipped through.
+      .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
+      .refine((v) => !v || /^https:\/\/([a-z0-9-]+\.)?linkedin\.com\/.+/i.test(v), {
+        message: 'Paste the address of your LinkedIn profile',
+      })
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    bio: z
+      .string()
+      .trim()
+      .max(500, 'Keep it under 500 characters')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
     acceptedGuidelines: z.literal(true, {
       errorMap: () => ({ message: 'Please accept the community guidelines to continue.' }),
     }),
@@ -69,6 +88,8 @@ export function resolveNames(v: OnboardingValues): { realName: string; displayNa
 // turned into one stored name.
 export const profileEditSchema = z.object({
   displayName: z.string().trim().min(1).max(60).optional(),
+  linkedin: z.string().trim().max(200).optional(),
+  bio: z.string().trim().max(500).optional(),
   realName: z.string().trim().max(120).optional(),
   avatarPath: z.string().optional(),
   displayPref: z.enum(['avatar_only', 'avatar_name']).optional(),

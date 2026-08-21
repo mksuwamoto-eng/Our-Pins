@@ -26,6 +26,16 @@ const editSchema = z.object({
     .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  linkedin: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
+    .refine((v) => !v || /^https:\/\/([a-z0-9-]+\.)?linkedin\.com\/.+/i.test(v), {
+      message: 'Paste the address of your LinkedIn profile',
+    })
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   bio: z
     .string()
     .trim()
@@ -71,6 +81,7 @@ export async function PATCH(req: Request) {
     instagram: v.instagram?.trim() || null,
     website: v.website?.trim() || null,
     bio: v.bio?.trim() || null,
+    linkedin: v.linkedin?.trim() || null,
   };
   if (v.avatarPath) update.avatar_path = v.avatarPath;
 

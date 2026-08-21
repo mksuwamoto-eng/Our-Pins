@@ -13,11 +13,25 @@ export default async function OnboardingPage() {
 
   const t = await getTranslations('onboarding');
 
-  // LINE sign-ins carry the LINE profile photo in user_metadata (session.ts).
-  // It is imported automatically at sign-in (ensureLineAvatar); this still
-  // backs a manual "Use my LINE photo" button for anyone who clears it.
+  // The LINE photo is imported automatically at sign-in (ensureLineAvatar), so
+  // by the time onboarding renders there is usually already an avatar to show.
+  // Sign it, or the member sees an empty camera circle and assumes nothing
+  // happened.
+  const hasAvatar = Boolean(profile?.avatar_path && !profile.avatar_path.includes('_pending'));
+  let avatarUrl: string | null = null;
+  if (hasAvatar && profile?.avatar_path) {
+    const { data } = await supabase.storage
+      .from('pin-photos')
+      .createSignedUrl(profile.avatar_path, 3600);
+    avatarUrl = data?.signedUrl ?? null;
+  }
+
+  // Only offer the manual "Use my LINE photo" button when the automatic import
+  // did not produce one — otherwise it invites a click that changes nothing.
   const linePicture =
-    typeof user.user_metadata?.picture === 'string' ? user.user_metadata.picture : null;
+    !hasAvatar && typeof user.user_metadata?.picture === 'string'
+      ? user.user_metadata.picture
+      : null;
 
   // Pre-fill from the LINE display name where we can — most Greek LINE users
   // have "First Last" set, which makes the name step a confirmation instead of
@@ -31,12 +45,15 @@ export default async function OnboardingPage() {
       <OnboardingForm
         userId={user.id}
         linePicture={linePicture}
+        avatarUrl={avatarUrl}
         initial={{
           firstName: lineFirst,
           lastName: lineRest.join(' '),
           displayPref: profile?.display_pref ?? 'avatar_name',
           instagram: profile?.instagram ?? '',
           website: profile?.website ?? '',
+          linkedin: profile?.linkedin ?? '',
+          bio: profile?.bio ?? '',
         }}
       />
     </main>

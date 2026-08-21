@@ -17,6 +17,7 @@ export interface Profile {
   display_pref: DisplayPref;
   instagram: string | null;
   website: string | null;
+  linkedin: string | null;
   bio: string | null;
   is_member: boolean;
   role: Role;

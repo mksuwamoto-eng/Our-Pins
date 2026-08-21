@@ -11,6 +11,7 @@ interface Props {
     displayName: string;
     instagram: string;
     website: string;
+    linkedin: string;
     bio: string;
     avatarPath: string;
     avatarUrl: string | null;
@@ -24,6 +25,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [instagram, setInstagram] = useState(initial.instagram);
+  const [linkedin, setLinkedin] = useState(initial.linkedin);
   const [website, setWebsite] = useState(initial.website);
   const [bio, setBio] = useState(initial.bio);
   const [avatarPath, setAvatarPath] = useState(initial.avatarPath);
@@ -42,6 +44,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
       body: JSON.stringify({
         displayName: displayName.trim(),
         instagram: instagram.trim(),
+        linkedin: linkedin.trim(),
         website: website.trim(),
         bio: bio.trim(),
         avatarPath: avatarPath || undefined,
@@ -65,6 +68,8 @@ export function ProfileEditForm({ userId, initial }: Props) {
           userId={userId}
           initialUrl={initial.avatarUrl}
           onChange={(path) => setAvatarPath(path)}
+          uploadingLabel={t('photoUploading')}
+          readyLabel={t('photoReady')}
         />
       </div>
 
@@ -88,6 +93,17 @@ export function ProfileEditForm({ userId, initial }: Props) {
           maxLength={500}
           rows={3}
           placeholder={t('bioHelp')}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm font-medium">{t('linkedin')}</label>
+        <input
+          value={linkedin}
+          onChange={(e) => setLinkedin(e.target.value)}
+          inputMode="url"
+          placeholder="linkedin.com/in/yourname"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
         />
       </div>

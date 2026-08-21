@@ -10,6 +10,8 @@ export function AvatarUploader({
   onChange,
   linePicture,
   lineLabel,
+  uploadingLabel,
+  readyLabel,
 }: {
   userId: string;
   initialUrl?: string | null;
@@ -18,6 +20,8 @@ export function AvatarUploader({
   // captured from LINE at sign-in. `lineLabel` is the localized button text.
   linePicture?: string | null;
   lineLabel?: string;
+  uploadingLabel: string;
+  readyLabel: string;
 }) {
   const [preview, setPreview] = useState<string | null>(initialUrl ?? null);
   const [busy, setBusy] = useState(false);
@@ -93,9 +97,11 @@ export function AvatarUploader({
             {lineLabel}
           </button>
         ) : null}
-        {busy ? <p>Uploading…</p> : null}
+        {busy ? <p>{uploadingLabel}</p> : null}
         {error ? <p className="text-[var(--color-terracotta-500)]">{error}</p> : null}
-        {!busy && !error && preview ? <p className="text-[var(--muted)]">Looks good ✓</p> : null}
+        {!busy && !error && preview ? (
+          <p className="text-[var(--muted)]">{readyLabel}</p>
+        ) : null}
       </div>
     </div>
   );

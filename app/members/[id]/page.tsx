@@ -51,6 +51,16 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
               {t('vouchesCount', { count: vouchCount ?? 0 })}
             </p>
             <div className="mt-1 flex flex-wrap gap-3 text-sm">
+              {member.linkedin ? (
+                <a
+                  href={member.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--primary)] hover:underline"
+                >
+                  LinkedIn
+                </a>
+              ) : null}
               {member.instagram ? (
                 <a
                   href={`https://instagram.com/${member.instagram}`}
