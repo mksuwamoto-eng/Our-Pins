@@ -37,8 +37,12 @@ export default async function SignInPage({
         priority
         className="mb-6 h-20 w-20 self-center rounded-2xl shadow-sm"
       />
-      <h1 className="mb-2 text-center font-serif text-3xl text-[var(--fg)]">{t('signInTitle')}</h1>
-      <p className="mb-8 text-center text-sm text-[var(--muted)]">{t('needInvite')}</p>
+      <h1 className="mb-2 text-center font-serif text-3xl text-[var(--fg)]">
+        {t(invite ? 'invitedTitle' : 'signInTitle')}
+      </h1>
+      <p className="mb-8 text-center text-sm text-[var(--muted)]">
+        {t(invite ? 'invitedBody' : 'needInvite')}
+      </p>
 
       {friendlyError ? (
         <div

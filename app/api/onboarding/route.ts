@@ -31,17 +31,14 @@ export async function POST(req: Request) {
     .neq('id', user.id)
     .maybeSingle();
   if (clash) {
-    return NextResponse.json(
-      { error: 'Someone already uses that name — tick “Show a different name” to pick another.' },
-      { status: 409 },
-    );
+    // Machine code, not display text — the client maps it to a localized string.
+    return NextResponse.json({ error: 'name_taken' }, { status: 409 });
   }
 
   const cleanInsta = v.instagram?.trim() || null;
   const cleanWebsite = v.website?.trim() || null;
   const update: Record<string, unknown> = {
     display_name: displayName,
-    display_pref: v.displayPref,
     instagram: cleanInsta,
     website: cleanWebsite,
     linkedin: v.linkedin?.trim() || null,

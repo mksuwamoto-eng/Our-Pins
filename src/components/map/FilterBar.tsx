@@ -26,7 +26,7 @@ export function FilterBar({
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={`${t('filters')}…`}
+        placeholder={t('searchPlaceholder')}
         className="rounded-full border border-[var(--border)] bg-[var(--surface)]/95 px-4 py-2 text-sm shadow-sm backdrop-blur"
       />
       <CategoryFilter categories={categories} counts={counts} />

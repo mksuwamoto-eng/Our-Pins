@@ -4,10 +4,12 @@ import { getTranslations } from 'next-intl/server';
 import { AppShell } from '@/components/layout/AppShell';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { categoryLabel } from '@/lib/i18n/category';
 
 export default async function PinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const t = await getTranslations('pin');
+  const tc = await getTranslations('categories');
   const supabase = await createSupabaseServerClient();
   const { data: pin } = await supabase.from('pins').select('*').eq('id', id).maybeSingle();
   if (!pin) notFound();
@@ -24,7 +26,7 @@ export default async function PinDetailPage({ params }: { params: Promise<{ id: 
         <h1 className="mt-2 font-serif text-3xl">{pin.name}</h1>
         {category ? (
           <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-xs text-white" style={{ background: category.color }}>
-            {category.label}
+            {categoryLabel(tc, category)}
           </span>
         ) : null}
         <p className="mt-2 text-sm text-[var(--muted)]">{pin.address}</p>
@@ -35,7 +37,7 @@ export default async function PinDetailPage({ params }: { params: Promise<{ id: 
         <h2 className="mt-8 font-serif text-xl">{t('vouchedBy')}</h2>
         <ul className="mt-2 flex flex-wrap gap-2">
           {(vouches ?? []).map((v) => {
-            const p = (v as unknown as { voucher: { display_name: string; display_pref: string } | null }).voucher;
+            const p = (v as unknown as { voucher: { display_name: string } | null }).voucher;
             return (
               <li key={v.id} className="rounded-full bg-[var(--surface-subtle)] px-3 py-1 text-sm">
                 {p?.display_name ?? t('former')}

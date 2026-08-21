@@ -33,11 +33,11 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ category_id: categoryId, vouch_note: vouchNote.trim() }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error('save failed');
       const updated = (await res.json()) as Pin;
       onSaved(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setError(tCommon('error'));
     } finally {
       setBusy(false);
     }
@@ -48,10 +48,10 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
     setError(null);
     try {
       const res = await fetch(`/api/pins/${pin.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error('remove failed');
       onDeleted();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setError(tCommon('error'));
       setBusy(false);
     }
   }

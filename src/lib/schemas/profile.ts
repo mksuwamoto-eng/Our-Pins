@@ -6,10 +6,13 @@ import { z } from 'zod';
 // "display name" ("what other members see") alongside a full name marked
 // "only admins see this", which reliably produced handles. In a closed
 // community a recommendation is only worth something if you know who made it.
+// Validation messages are stable codes (not display strings): the forms map
+// them to localized text via the `onboarding.errors` message namespace, so a
+// Greek-first member never sees English validation errors.
 export const onboardingSchema = z
   .object({
-    firstName: z.string().trim().min(1, 'Please enter your first name').max(40),
-    lastName: z.string().trim().min(1, 'Please enter your surname').max(60),
+    firstName: z.string().trim().min(1, 'firstNameRequired').max(40),
+    lastName: z.string().trim().min(1, 'lastNameRequired').max(60),
     useNickname: z.boolean().default(false),
     nickname: z
       .string()
@@ -19,7 +22,6 @@ export const onboardingSchema = z
       .transform((v) => (v && v.length > 0 ? v : undefined)),
     email: z.string().trim().email().optional(),
     avatarPath: z.string().optional().or(z.literal('').transform(() => undefined)),
-    displayPref: z.enum(['avatar_only', 'avatar_name']),
     instagram: z
       .string()
       .trim()
@@ -27,7 +29,7 @@ export const onboardingSchema = z
       // Must match the DB CHECK constraint on profiles.instagram exactly,
       // or the save fails with a raw 500 after passing app validation.
       .refine((v) => /^[a-zA-Z0-9._]{1,30}$/.test(v), {
-        message: 'Instagram handles use letters, numbers, dots and underscores (max 30)',
+        message: 'instagramInvalid',
       })
       .optional()
       .or(z.literal('').transform(() => undefined)),
@@ -50,18 +52,18 @@ export const onboardingSchema = z
       // linkedin.com-only, and would 500 on anything that slipped through.
       .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
       .refine((v) => !v || /^https:\/\/([a-z0-9-]+\.)?linkedin\.com\/.+/i.test(v), {
-        message: 'Paste the address of your LinkedIn profile',
+        message: 'linkedinInvalid',
       })
       .optional()
       .or(z.literal('').transform(() => undefined)),
     bio: z
       .string()
       .trim()
-      .max(500, 'Keep it under 500 characters')
+      .max(500, 'bioTooLong')
       .optional()
       .or(z.literal('').transform(() => undefined)),
     acceptedGuidelines: z.literal(true, {
-      errorMap: () => ({ message: 'Please accept the community guidelines to continue.' }),
+      errorMap: () => ({ message: 'guidelinesRequired' }),
     }),
   })
   .superRefine((v, ctx) => {
@@ -69,7 +71,7 @@ export const onboardingSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['nickname'],
-        message: 'Enter the name you want shown, or untick the box',
+        message: 'nicknameRequired',
       });
     }
   });
@@ -92,7 +94,6 @@ export const profileEditSchema = z.object({
   bio: z.string().trim().max(500).optional(),
   realName: z.string().trim().max(120).optional(),
   avatarPath: z.string().optional(),
-  displayPref: z.enum(['avatar_only', 'avatar_name']).optional(),
   instagram: z.string().trim().optional(),
   website: z.string().trim().max(200).optional(),
 });

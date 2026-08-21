@@ -8,6 +8,7 @@ import { getMapsLoader } from '@/lib/maps/loader';
 import type { Category } from '@/lib/supabase/types';
 import { placeToPinFields } from '@/lib/maps/places';
 import { categoryLabel } from '@/lib/i18n/category';
+import { SENSITIVE_CATEGORY_SLUGS } from '@/lib/categories/sensitive';
 
 interface FormValues {
   vouch_note: string;
@@ -75,7 +76,8 @@ export function PinForm({ categories }: { categories: Category[] }) {
     });
     if (!res.ok) {
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      setSubmitError(json.error ?? tCommon('error'));
+      // API errors arrive as stable codes; map them to localized text.
+      setSubmitError(json.error === 'already_pinned' ? t('errors.alreadyPinned') : tCommon('error'));
       return;
     }
     const created = (await res.json()) as { id: string };
@@ -118,8 +120,16 @@ export function PinForm({ categories }: { categories: Category[] }) {
         <textarea
           {...form.register('vouch_note', { required: true, minLength: 1, maxLength: 1000 })}
           rows={5}
+          placeholder={t('vouchPlaceholder')}
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
         />
+        <p className="text-xs text-[var(--muted)]">{t('attributionNote')}</p>
+        {(() => {
+          const slug = categories.find((c) => c.id === form.watch('category_id'))?.slug;
+          return slug && SENSITIVE_CATEGORY_SLUGS.has(slug) ? (
+            <p className="text-xs text-[var(--color-terracotta-500)]">{t('sensitiveNote')}</p>
+          ) : null;
+        })()}
       </div>
 
       {submitError ? (
@@ -131,7 +141,7 @@ export function PinForm({ categories }: { categories: Category[] }) {
         disabled={!place || form.formState.isSubmitting}
         className="rounded-lg bg-[var(--primary)] px-4 py-3 font-medium text-white disabled:opacity-60"
       >
-        {form.formState.isSubmitting ? tCommon('loading') : t('save')}
+        {form.formState.isSubmitting ? tCommon('loading') : t('saveAndVouch')}
       </button>
     </form>
   );

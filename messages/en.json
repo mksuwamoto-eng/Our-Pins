@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Our Pins",
-    "tagline": "Our community map of Japan",
     "files": "Files",
     "filesTooltip": "Open shared Google Drive (members can upload)"
   },
@@ -10,34 +9,37 @@
     "help": "Help & feedback",
     "howItWorks": "How it works",
     "guidelines": "Community guidelines",
-    "feedback": "Send feedback"
+    "feedback": "Send feedback",
+    "privacy": "Privacy policy",
+    "toggleTheme": "Toggle theme"
   },
   "auth": {
-    "signInTitle": "Welcome back",
+    "signInTitle": "Sign in",
+    "invitedTitle": "You're invited",
+    "invitedBody": "Our Pins is the private map where Greeks in Japan share the places we actually vouch for — tavernas, doctors, day trips. Members only. Sign in with LINE to claim your invite.",
     "signInWithLine": "Sign in with LINE",
     "signInWithGoogle": "Sign in with Google",
     "needInvite": "You'll need an invite from Mako to join.",
     "signOut": "Sign out",
     "noInviteHeading": "You need an invite",
     "noInviteBody": "Our Pins is private and invite-only. Ask Mako or a community admin for an invite link.",
-    "linkExpired": "Your sign-in link expired or was already used. Enter your email below to get a new one.",
-    "signInError": "Something went wrong signing you in. Try again with the form below.",
-    "privacyNote": "Sign-in is only used to confirm your identity. Your email address is visible to community admins only.",
+    "noInviteRecovery": "Already have an invite link? Open it again from LINE and sign in right after.",
+    "linkExpired": "That sign-in didn't go through — the link expired or was already used. Tap “Sign in with LINE” to try again.",
+    "signInError": "That sign-in didn't go through. Tap “Sign in with LINE” to try again — if it keeps failing, message Mako on LINE.",
+    "privacyNote": "Sign-in is only used to confirm your identity. We receive your LINE name and photo — LINE does not share your email address with us.",
     "privacyPolicy": "Privacy policy"
   },
   "invite": {
-    "acceptingTitle": "Activating your invite",
-    "expiredTitle": "Invite expired",
     "expiredBody": "This invite link is no longer active. Ask Mako for a new one.",
-    "invalidTitle": "Invalid invite",
     "invalidBody": "We didn't recognise this link."
   },
   "onboarding": {
     "title": "Let's set you up",
+    "subtitle": "30 seconds. Only your name is needed — everything else can wait.",
     "firstName": "First name",
     "lastName": "Surname",
     "displayName": "Name shown to members",
-    "nameHelp": "This is a closed group — people should know who is recommending a place. Your name is only ever visible to other members.",
+    "nameHelp": "This is a closed group — people should know who is recommending a place. Your name is visible to community members, in the app and in the weekly recap posted to our LINE group.",
     "useNickname": "Show a different name instead",
     "nicknameHelp": "What other members will see. Your real name stays private, visible only to admins.",
     "avatarHelp": "If you signed in with LINE we have already brought your photo across. Tap it to use a different one.",
@@ -46,9 +48,7 @@
     "useLinePhoto": "Use my LINE photo",
     "photoUploading": "Uploading…",
     "photoReady": "Looks good ✓",
-    "displayPref": "How to appear to others",
-    "displayPrefAvatarOnly": "Avatar only",
-    "displayPrefAvatarName": "Avatar and name",
+    "moreOptional": "More about you — optional, add anytime in Settings",
     "instagram": "Instagram",
     "website": "Website",
     "linkedin": "LinkedIn",
@@ -57,11 +57,21 @@
     "bioHelp": "Tell the community a little about yourself — where you live, what you do.",
     "bioPlaceholder": "e.g. In Tokyo since 2019, from Thessaloniki. Work in logistics, two kids, always looking for a decent bakery.",
     "guidelinesAccept": "I agree to the <link>community guidelines</link>",
-    "submit": "Continue"
+    "submit": "Continue",
+    "errors": {
+      "firstNameRequired": "Please enter your first name",
+      "lastNameRequired": "Please enter your surname",
+      "instagramInvalid": "Instagram handles use letters, numbers, dots and underscores (max 30)",
+      "linkedinInvalid": "Paste the address of your LinkedIn profile",
+      "bioTooLong": "Keep it under 500 characters",
+      "guidelinesRequired": "Please accept the community guidelines to continue.",
+      "nicknameRequired": "Enter the name you want shown, or untick the box",
+      "nameTaken": "Someone already uses that name — tick “Show a different name” to pick another."
+    }
   },
   "guidelines": {
     "navTitle": "Guidelines",
-    "title": "Community Guidelines",
+    "title": "Community guidelines",
     "intro": "Our Pins is a small, invite-only community of Greeks living in Japan.",
     "rules": [
       {
@@ -114,11 +124,11 @@
       },
       {
         "title": "Board and Resources",
-        "body": "The Board is for time-limited needs — jobs, housing, things for sale, events — and posts expire after 30 days. Resources is a permanent library of how-tos and things worth watching or reading."
+        "body": "The Board is for time-limited needs — jobs, housing, things for sale, events — and posts leave the board after 30 days. Resources is a permanent library of how-tos and things worth watching or reading."
       },
       {
-        "title": "Parea, the concierge",
-        "body": "Tap the chat bubble to ask Parea for a recommendation. It answers only from the community's own pins, vouches, and notes, and points you to members by name."
+        "title": "Parea, our assistant",
+        "body": "Tap the chat bubble to ask Parea for a recommendation. It answers only from what the community has shared — pins, vouches, member bios, the Board and Resources — and points you to members by name."
       },
       {
         "title": "Language and dark mode",
@@ -130,9 +140,11 @@
   "map": {
     "title": "Map",
     "addPin": "Add pin",
-    "filters": "Filters",
-    "list": "List",
-    "newPinToast": "{name} added a pin",
+    "searchPlaceholder": "Search pins…",
+    "welcome": "Every pin is a place someone here has actually been. Zoom to your city and tap any pin — or tap any place on the map and be the first to vouch for it.",
+    "welcomeCity": "Take me to Tokyo",
+    "welcomeGuide": "How it works",
+    "gotIt": "Got it",
     "loadError": "The map couldn't load. Check your connection and refresh.",
     "addPlaceTooltip": "Add a place not already on the map",
     "everyone": "Everyone",
@@ -148,21 +160,20 @@
     "removeVouch": "Remove vouch",
     "vouchNote": "Why I vouch",
     "vouchComment": "Comment (optional)",
+    "attributionNote": "Posted with your name — visible to all members, and Parea may cite it.",
+    "sensitiveNote": "Heads-up: vouching here shares, under your name, that you've used this kind of service. Vouch only if you're comfortable with all members knowing.",
     "category": "Category",
     "addPhotos": "Add photos (up to 4)",
     "addPhoto": "Add photo",
     "removePhoto": "Remove photo",
-    "save": "Save",
-    "delete": "Delete pin",
-    "archive": "Archive",
-    "restore": "Restore",
+    "delete": "Remove pin",
     "former": "Former member",
     "placeErrorTitle": "Couldn't load this place",
     "placeErrorBody": "Google didn't return details for this spot. Close the sheet and try again.",
     "edit": "Edit",
     "editPin": "Edit pin",
     "saveChanges": "Save changes",
-    "confirmDelete": "Confirm delete",
+    "confirmDelete": "Confirm remove",
     "pinned": "pinned",
     "vouchedNoComment": "vouched, no comment",
     "copied": "Copied",
@@ -181,7 +192,13 @@
     "showTranslation": "show translation",
     "photosTitle": "Photos",
     "photosCreatorHint": "Add photos so others can see this place.",
-    "photosAfterSave": "You'll be able to add photos right after saving."
+    "photosAfterSave": "You'll be able to add photos right after saving.",
+    "errors": {
+      "alreadyPinned": "This place has already been pinned by the community.",
+      "badImageType": "Use a JPEG, PNG, or WebP image",
+      "imageTooLarge": "Image must be under 5MB",
+      "photoLimit": "Up to 4 photos per pin"
+    }
   },
   "members": {
     "title": "Members",
@@ -197,7 +214,7 @@
     "back": "Back to the map"
   },
   "board": {
-    "title": "Noticeboard",
+    "title": "Board",
     "navTitle": "Board",
     "subtitle": "Jobs, housing, things for sale, events — anything the community should know.",
     "newPost": "New post",
@@ -212,7 +229,7 @@
     "titlePlaceholder": "What are you announcing?",
     "bodyLabel": "Details",
     "bodyPlaceholder": "Say more — include how to reach you.",
-    "expiryNote": "Posts disappear automatically after 30 days.",
+    "expiryNote": "Posts leave the board after 30 days. Titles of new posts may appear in the weekly recap in the community LINE group.",
     "submit": "Post",
     "posting": "Posting…",
     "postFailed": "Couldn't post — try again.",
@@ -220,6 +237,7 @@
     "requiredFields": "Add a title and details first.",
     "cancel": "Cancel",
     "remove": "Remove",
+    "confirmRemove": "Confirm remove",
     "removeFailed": "Couldn't remove that — try again.",
     "empty": "Nothing here yet. Share something with the community!",
     "formerMember": "Former member"
@@ -255,6 +273,7 @@
     "saving": "Saving…",
     "editFailed": "Couldn't save — try again.",
     "remove": "Remove",
+    "confirmRemove": "Confirm remove",
     "removeFailed": "Couldn't remove that — try again.",
     "empty": "Nothing here yet. Share the first resource!",
     "noMatches": "No matches.",
@@ -262,7 +281,6 @@
     "updated": "edited {when}"
   },
   "feedback": {
-    "buttonLabel": "Report a bug or suggest a feature",
     "title": "Feedback",
     "subtitle": "Spotted a bug or wishing for something? It goes straight to the admins.",
     "kind_bug": "Bug",
@@ -304,20 +322,19 @@
   },
   "settings": {
     "title": "Settings",
-    "language": "Language",
-    "theme": "Theme",
-    "themeLight": "Light",
-    "themeDark": "Dark",
-    "themeSystem": "System",
     "danger": "Danger zone",
     "deleteAccount": "Delete account",
-    "deleteAccountConfirm": "Are you sure you want to delete your account? This can't be undone.",
-    "deleteAccountExplainer": "Your pins and vouches will be retained but anonymised. Your private profile data will be erased.",
+    "deleteAccountExplainer": "Your pins are removed from the map, and your vouches on other members' pins stay, shown anonymously as “Former member”. Your profile, photo, and private details are erased permanently. This can't be undone.",
+    "deleteTypeToConfirm": "Type <code>DELETE</code> to confirm:",
+    "deleteTypeError": "Type DELETE in capital letters to confirm.",
+    "deleting": "Deleting…",
+    "deleteSubmit": "Delete my account",
     "editProfile": "Edit profile",
-    "editProfileHelp": "Update your display name, photo, Instagram, or website.",
+    "editProfileHelp": "Update your display name, photo, bio, or links (Instagram, LinkedIn, website).",
+    "nameTaken": "That name's taken — try a nickname or add an initial.",
     "saved": "Saved.",
     "saving": "Saving…",
-    "saveFailed": "Save failed"
+    "saveFailed": "Couldn't save — try again."
   },
   "admin": {
     "title": "Admin",
@@ -328,29 +345,53 @@
     "createInvite": "Create invite",
     "copyLink": "Copy",
     "revoke": "Revoke",
-    "toggleMembership": "Toggle membership",
-    "promoteAdmin": "Promote to admin",
-    "demoteAdmin": "Demote to member",
     "feedback": "Feedback"
   },
   "concierge": {
     "title": "Ask Parea",
-    "subtitle": "Answers come only from the community's vouches.",
+    "subtitle": "Answers come only from what the community has shared here — pins, vouches, bios, and posts.",
     "placeholder": "Where should I go for…?",
     "send": "Ask",
     "close": "Close",
     "thinking": "Parea is thinking…",
-    "empty": "Ask anything — \"Where do I take my parents for 3 days near Tokyo?\" — and Parea answers from what the community has vouched for, citing who said it.",
+    "empty": "Ask anything — \"Where do I take my parents for 3 days near Tokyo?\" — and Parea answers from what the community has shared, citing who said it.",
     "errorGeneric": "Something went wrong. Try again.",
     "errorBudget": "Parea has used up this month's budget. Try again next month.",
     "errorDaily": "You've reached today's question limit. Ask again tomorrow.",
     "errorNotConfigured": "Parea isn't set up yet — ask Mako."
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "lastUpdated": "Last updated: August 22, 2026",
+    "whoTitle": "Who we are",
+    "whoBody": "Our Pins is a private, invite-only community map for members of the Greek community in Japan. It is run by community volunteers, not a company. This page explains what personal data we collect and how we use it.",
+    "collectTitle": "What we collect",
+    "collectSignIn": "Sign-in information: your LINE user ID, name, and profile picture. LINE does not give us your email address. (Admins who sign in with Google or email also share that email address.)",
+    "collectProfile": "Profile information you provide: display name, optional photo, optional full name (visible to admins only), an optional short bio, and optional links (Instagram, LinkedIn, website).",
+    "collectContent": "Content you post: places you pin, vouches, comments, photos, noticeboard posts, and resources.",
+    "collectParea": "Questions you ask Parea: when you use our assistant — in the app or over LINE — we log your questions and its answers so the app's operator can monitor usage and prevent abuse.",
+    "collectFeedback": "Feedback you send: bug reports and suggestions, along with which page you were on; visible to admins only.",
+    "lineTitle": "Sign-in with LINE",
+    "lineBody": "When you sign in with LINE, we receive your LINE user ID, display name, and profile picture. LINE does not share your email address with us; internally we store a placeholder address that is never used to send mail. Once you're a member, your LINE profile picture is imported automatically as your starting photo — you can replace or remove it any time in Settings. If you sign in without a valid invite, a minimal account record is created; ask an admin to remove it if you don't join.",
+    "digestTitle": "Weekly recap in our LINE group",
+    "digestBody": "Once a week, our bot posts a short recap to the community's LINE group: names of newly pinned places, titles of new Board posts and Resources, and the display names of new members. The bot does not read or store other messages in the group. If you'd rather not appear in a recap, tell an admin.",
+    "useTitle": "How we use your data",
+    "useVerify": "To verify that you are an invited member and keep the community private.",
+    "useShow": "To show your profile and contributions to other members.",
+    "useManage": "To let admins manage invitations and membership.",
+    "useNote": "Your email address (where we have one) is visible only to admins, never to other members. We do not send marketing messages.",
+    "storeTitle": "Where your data is stored and who processes it",
+    "storeBody": "Data is stored with Supabase (Tokyo, Japan); the app is served by Vercel; map data comes from Google Maps. Content you post — pin notes, vouches, Board posts, Resources, member bios and display names — and the questions you ask Parea may be processed by Anthropic's Claude API to provide translations and answers; this content is not used to train AI models. Recaps and bot replies are delivered through LINE. We never sell your data and never share it for advertising — it goes only to these service providers, as needed to run the features described here. The “Files” link in the menu leads to a shared Google Drive folder governed by Google's terms, not this policy.",
+    "retentionBody": "Parea logs and feedback are kept until deleted by the operator; expired Board posts are hidden from the app but kept in the database.",
+    "choicesTitle": "Your choices",
+    "choicesBody": "You can edit your profile at any time in Settings. You can delete your account from Settings → Danger zone: your pins are removed from the map, your vouches on other members' pins remain shown anonymously as “Former member”, and your profile, photo, and private details are permanently erased. For any questions or data requests, contact a community admin."
   },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
     "loading": "Loading…",
     "error": "Something went wrong",
+    "uploadFailed": "Upload failed — try again.",
     "back": "Back",
     "close": "Close"
   }

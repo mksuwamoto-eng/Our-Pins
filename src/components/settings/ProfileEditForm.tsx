@@ -18,8 +18,12 @@ interface Props {
   };
 }
 
+// API validation errors arrive as stable codes; map them to localized text.
+const FIELD_ERROR_CODES = new Set(['instagramInvalid', 'linkedinInvalid', 'bioTooLong']);
+
 export function ProfileEditForm({ userId, initial }: Props) {
   const t = useTranslations('onboarding');
+  const te = useTranslations('onboarding.errors');
   const tSettings = useTranslations('settings');
   const tPin = useTranslations('pin');
   const router = useRouter();
@@ -53,7 +57,14 @@ export function ProfileEditForm({ userId, initial }: Props) {
     setBusy(false);
     if (!res.ok) {
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(json.error ?? tSettings('saveFailed'));
+      const code = json.error;
+      setError(
+        code === 'name_taken'
+          ? tSettings('nameTaken')
+          : code && FIELD_ERROR_CODES.has(code)
+            ? te(code)
+            : tSettings('saveFailed'),
+      );
       return;
     }
     setSaved(true);
@@ -103,7 +114,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
           value={linkedin}
           onChange={(e) => setLinkedin(e.target.value)}
           inputMode="url"
-          placeholder="linkedin.com/in/yourname"
+          placeholder="linkedin.com/in/…"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
         />
       </div>
@@ -114,7 +125,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
           <input
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}
-            placeholder="yourhandle"
+            placeholder="@handle"
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
           />
         </div>
@@ -123,7 +134,7 @@ export function ProfileEditForm({ userId, initial }: Props) {
           <input
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
-            placeholder="https://"
+            placeholder="https://…"
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
           />
         </div>

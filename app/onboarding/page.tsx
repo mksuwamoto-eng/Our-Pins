@@ -41,7 +41,8 @@ export default async function OnboardingPage() {
 
   return (
     <main className="mx-auto max-w-xl px-6 py-10">
-      <h1 className="mb-6 font-serif text-3xl">{t('title')}</h1>
+      <h1 className="mb-2 font-serif text-3xl">{t('title')}</h1>
+      <p className="mb-6 text-sm text-[var(--muted)]">{t('subtitle')}</p>
       <OnboardingForm
         userId={user.id}
         linePicture={linePicture}
@@ -49,7 +50,6 @@ export default async function OnboardingPage() {
         initial={{
           firstName: lineFirst,
           lastName: lineRest.join(' '),
-          displayPref: profile?.display_pref ?? 'avatar_name',
           instagram: profile?.instagram ?? '',
           website: profile?.website ?? '',
           linkedin: profile?.linkedin ?? '',

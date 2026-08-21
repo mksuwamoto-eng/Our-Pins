@@ -33,7 +33,7 @@ const ERROR_REPLY: Record<AskError, string> = {
     'I have used up my budget for this month — ask me again next month! / Εξάντλησα το μηνιαίο μου όριο — τα ξαναλέμε του μήνα!',
   daily_limit:
     'You have reached today’s question limit — ask me again tomorrow! / Έφτασες το ημερήσιο όριο — ρώτα με ξανά αύριο!',
-  model_rate_limited: 'I am a bit overloaded — try again in a minute. / Λίγη υπερφόρτωση — δοκίμασε ξανά σε ένα λεπτό.',
+  model_rate_limited: 'I am a bit overloaded — try again in a minute. / Έχω λίγο φόρτο τώρα — δοκίμασε ξανά σε λίγο.',
   model_error: 'Something went wrong on my end — try again later. / Κάτι πήγε στραβά — δοκίμασε ξανά αργότερα.',
   model_refused: 'Something went wrong on my end — try again later. / Κάτι πήγε στραβά — δοκίμασε ξανά αργότερα.',
 };
@@ -43,7 +43,7 @@ const ERROR_REPLY: Record<AskError, string> = {
 // that DOES work today is invite link → sign in with LINE — so that's what
 // the copy has to say.
 const NOT_LINKED_REPLY =
-  'This chat is for Our Pins members. Ask Mako (or the group) for an invite link, open it, and sign in with LINE — then ask me anything! / Ζήτα από τον Μάκο (ή την ομάδα) ένα invite link, άνοιξέ το και συνδέσου με LINE — μετά ρώτα με ό,τι θες!';
+  'This chat is for Our Pins members. Ask Mako (or the group) for an invite link, open it, and sign in with LINE — then ask me anything! / Ζήτα από τον Μάκο (ή την ομάδα) έναν σύνδεσμο πρόσκλησης, άνοιξέ τον και συνδέσου με LINE — μετά ρώτα με ό,τι θες!';
 
 const LOCATION_REPLY =
   'I can’t turn shared locations into pins yet — add it on the map! / Δεν μπορώ να κάνω pin από τοποθεσία ακόμα — πρόσθεσέ το στον χάρτη!';
@@ -52,9 +52,11 @@ const TEXT_ONLY_REPLY =
   'I only understand text for now 💬 / Καταλαβαίνω μόνο κείμενο προς το παρόν!';
 
 const USAGE_HINT_REPLY =
-  'Γεια! 👋 Ask me about places members have vouched for — e.g. "@parea πού για καλό καφέ;" or "@parea any good restaurants in Tokyo?"';
+  'Γεια! 👋 Ρώτα με για μέρη που έχει εγγυηθεί η κοινότητα — π.χ. «@parea πού για καλό καφέ;» / Ask me about places members have vouched for — e.g. "@parea any good restaurants in Tokyo?"';
 
-const INTRO_REPLY = `Γεια σας! I’m Parea, the Our Pins concierge for Greeks of Japan. Ask me for places the community has vouched for — try "πού για καλό καφέ;" or "any good restaurants in Tokyo?" — and I’ll answer with who recommended what. In the group chat, start your message with @parea (or mention me). I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
+const INTRO_REPLY = `Γεια σου! Είμαι η Παρέα, η βοηθός του Our Pins για τους Έλληνες της Ιαπωνίας. Ρώτα με για μέρη που έχει προτείνει η κοινότητα — π.χ. «πού για καλό καφέ;» — και θα σου πω ποιος τα σύστησε. Ξέρω μόνο όσα έχουν μπει στο ${publicEnv.NEXT_PUBLIC_SITE_URL}!
+—
+Hi! I’m Parea, the Our Pins assistant for Greeks of Japan. Ask me for places the community has vouched for — try "any good restaurants in Tokyo?" — and I’ll answer with who recommended what. I only know what members have pinned on ${publicEnv.NEXT_PUBLIC_SITE_URL} — the more you pin, the smarter I get!`;
 
 /**
  * Replace one marker kind with "name (url)" text. `lookup` resolves the ids

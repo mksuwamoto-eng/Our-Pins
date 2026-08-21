@@ -2,7 +2,14 @@
 
 import imageCompression from 'browser-image-compression';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Camera } from 'lucide-react';
+
+// API errors arrive as stable codes; map them to `pin.errors.*` message keys.
+const IMAGE_ERROR_KEYS: Record<string, string> = {
+  bad_image_type: 'badImageType',
+  image_too_large: 'imageTooLarge',
+};
 
 export function AvatarUploader({
   userId: _userId,
@@ -23,6 +30,8 @@ export function AvatarUploader({
   uploadingLabel: string;
   readyLabel: string;
 }) {
+  const te = useTranslations('pin.errors');
+  const tCommon = useTranslations('common');
   const [preview, setPreview] = useState<string | null>(initialUrl ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +41,13 @@ export function AvatarUploader({
     setBusy(true);
     try {
       const res = await fetch('/api/profile/avatar/from-line', { method: 'POST' });
-      if (!res.ok) {
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(json.error ?? 'Import failed');
-      }
+      if (!res.ok) throw new Error('import failed');
       const { path } = (await res.json()) as { path: string };
       onChange(path);
       // The LINE CDN URL is public, so it doubles as the preview image.
       if (linePicture) setPreview(linePicture);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+    } catch {
+      setError(tCommon('uploadFailed'));
     } finally {
       setBusy(false);
     }
@@ -63,13 +69,14 @@ export function AvatarUploader({
       const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
       if (!res.ok) {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(json.error ?? 'Upload failed');
+        const key = json.error ? IMAGE_ERROR_KEYS[json.error] : undefined;
+        throw new Error(key ? te(key) : tCommon('uploadFailed'));
       }
       const { path } = (await res.json()) as { path: string };
       onChange(path);
       setPreview(URL.createObjectURL(compressed));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : tCommon('uploadFailed'));
     } finally {
       setBusy(false);
     }

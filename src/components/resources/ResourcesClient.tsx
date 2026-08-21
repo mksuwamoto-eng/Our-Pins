@@ -179,6 +179,7 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   // Which rows are expanded to full detail. Compact-by-default keeps the list
   // short; a category section can also be folded away via CategorySection.
@@ -244,6 +245,7 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
   }
 
   async function onArchive(id: string) {
+    setConfirmRemoveId(null);
     setArchivingId(id);
     setError(null);
     try {
@@ -351,11 +353,16 @@ export function ResourcesClient({ resources, meId, isAdmin }: Props) {
                     {t('edit')}
                   </button>
                   <button
-                    onClick={() => onArchive(r.id)}
+                    onClick={() =>
+                      confirmRemoveId === r.id ? onArchive(r.id) : setConfirmRemoveId(r.id)
+                    }
                     disabled={archivingId === r.id}
-                    className="underline decoration-dotted disabled:opacity-60"
+                    className={cn(
+                      'underline decoration-dotted disabled:opacity-60',
+                      confirmRemoveId === r.id && 'font-medium text-[var(--color-terracotta-500)]',
+                    )}
                   >
-                    {t('remove')}
+                    {confirmRemoveId === r.id ? t('confirmRemove') : t('remove')}
                   </button>
                 </>
               ) : null}

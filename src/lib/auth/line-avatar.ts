@@ -79,11 +79,14 @@ export async function ensureLineAvatar(userId: string, picture: unknown): Promis
     const admin = createSupabaseAdminClient();
     const { data: profile } = await admin
       .from('profiles')
-      .select('avatar_path')
+      .select('avatar_path, is_member')
       .eq('id', userId)
       .maybeSingle();
 
-    if (!profile || profile.avatar_path !== PENDING_AVATAR) return;
+    // Members only: someone who taps "Sign in with LINE" without an invite
+    // must not leave their photo in our storage.
+    if (!profile || !profile.is_member) return;
+    if (profile.avatar_path !== PENDING_AVATAR) return;
 
     const result = await importLineAvatar(userId, picture);
     if ('error' in result) {

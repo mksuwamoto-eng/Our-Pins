@@ -11,7 +11,7 @@ export default async function MembersPage() {
   const [{ data: members }, { data: pinAuthors }, { data: vouchers }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, avatar_path, display_pref')
+      .select('id, display_name, avatar_path')
       .eq('is_member', true)
       .is('archived_at', null)
       .order('created_at', { ascending: true }),
@@ -48,6 +48,8 @@ export default async function MembersPage() {
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {(members ?? []).map((m) => {
             const url = m.avatar_path ? urlByPath.get(m.avatar_path) : undefined;
+            const pinCount = pinsByMember.get(m.id) ?? 0;
+            const vouchCount = vouchesByMember.get(m.id) ?? 0;
             return (
               <li key={m.id}>
                 <Link href={`/members/${m.id}`} className="card flex flex-col items-center gap-2 p-3">
@@ -58,10 +60,14 @@ export default async function MembersPage() {
                     <div className="h-14 w-14 rounded-full bg-[var(--color-washi-200)]" />
                   )}
                   <p className="text-sm">{m.display_name}</p>
-                  <p className="text-xs text-[var(--muted)]">
-                    {t('pinsCount', { count: pinsByMember.get(m.id) ?? 0 })} ·{' '}
-                    {t('vouchesCount', { count: vouchesByMember.get(m.id) ?? 0 })}
-                  </p>
+                  {/* A wave of fresh joiners shouldn't read as a grid of
+                      "0 pins · 0 vouches" — show counts once there's activity. */}
+                  {pinCount > 0 || vouchCount > 0 ? (
+                    <p className="text-xs text-[var(--muted)]">
+                      {t('pinsCount', { count: pinCount })} ·{' '}
+                      {t('vouchesCount', { count: vouchCount })}
+                    </p>
+                  ) : null}
                 </Link>
               </li>
             );

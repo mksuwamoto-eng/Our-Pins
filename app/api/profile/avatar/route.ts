@@ -17,10 +17,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing file' }, { status: 400 });
   }
   if (!ALLOWED.has(file.type)) {
-    return NextResponse.json({ error: 'Use a JPEG, PNG, or WebP image' }, { status: 400 });
+    return NextResponse.json({ error: 'bad_image_type' }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Image must be under 5MB' }, { status: 400 });
+    return NextResponse.json({ error: 'image_too_large' }, { status: 400 });
   }
 
   const path = `avatars/${user.id}/profile.jpg`;
@@ -30,7 +30,9 @@ export async function POST(req: Request) {
     contentType: file.type,
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Never leak raw storage errors to the client.
+    console.error('[profile/avatar] upload failed', error);
+    return NextResponse.json({ error: 'upload_failed' }, { status: 500 });
   }
 
   return NextResponse.json({ path });

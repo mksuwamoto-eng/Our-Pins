@@ -31,7 +31,10 @@ export async function buildCorpus(): Promise<string> {
         .is('archived_at', null)
         .order('created_at', { ascending: true }),
       admin.from('vouches').select('pin_id, voucher_id, comment'),
-      admin.from('profiles').select('id, display_name, bio'),
+      // Members only: revoked/deleted members and invite-less sign-ins must not
+      // be named (or have their bios quoted) by Parea — the UI anonymises them
+      // as "Former member", and the corpus has to match what members can see.
+      admin.from('profiles').select('id, display_name, bio').eq('is_member', true).is('archived_at', null),
       admin.from('categories').select('id, label'),
       admin
         .from('board_posts')

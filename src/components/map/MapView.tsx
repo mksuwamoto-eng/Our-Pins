@@ -22,6 +22,11 @@ const Concierge = dynamic(
 );
 
 const JAPAN_CENTER = { lat: 36.2048, lng: 138.2529 };
+const TOKYO = { lat: 35.6812, lng: 139.7671 };
+// One-time first-run banner: shown until the member opens any pin/place sheet
+// or dismisses it. The map alone doesn't explain the core interaction (tap a
+// place → community sheet), which is exactly where new members stalled.
+const INTRO_SEEN_KEY = 'op-intro-seen';
 
 export interface MemberOption {
   id: string;
@@ -55,6 +60,7 @@ export function MapView({ initialPins, categories, members }: Props) {
   const [justSavedPinId, setJustSavedPinId] = useState<string | null>(null);
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [mapLoadFailed, setMapLoadFailed] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
   const searchParams = useSearchParams();
   const pinIdFromUrl = searchParams.get('pin');
   const authorFromUrl = searchParams.get('author');
@@ -67,6 +73,23 @@ export function MapView({ initialPins, categories, members }: Props) {
     routerRef.current.replace('/', { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authorFromUrl]);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(INTRO_SEEN_KEY)) setShowIntro(true);
+    } catch {
+      // Private browsing without storage — just skip the banner.
+    }
+  }, []);
+
+  function dismissIntro() {
+    setShowIntro(false);
+    try {
+      localStorage.setItem(INTRO_SEEN_KEY, '1');
+    } catch {
+      // ignore
+    }
+  }
 
   const selection: SheetSelection = useMemo(() => {
     if (pinIdFromUrl) {
@@ -93,6 +116,13 @@ export function MapView({ initialPins, categories, members }: Props) {
     setPlaceSelection(null);
     setJustSavedPinId(null);
   }
+
+  // Opening any sheet proves the member found the core interaction — the
+  // banner's job is done.
+  useEffect(() => {
+    if (selection && showIntro) dismissIntro();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection]);
 
   const categoryById = useMemo(() => {
     const m = new Map<string, Category>();
@@ -259,6 +289,32 @@ export function MapView({ initialPins, categories, members }: Props) {
         </div>
       ) : null}
       <FilterBar categories={categories} members={members} counts={categoryCounts} />
+      {showIntro && tilesLoaded ? (
+        <div className="absolute inset-x-3 top-16 z-20 mx-auto max-w-md rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-lg">
+          <p className="text-sm text-[var(--fg)]">{t('welcome')}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                map?.panTo(TOKYO);
+                map?.setZoom(12);
+                dismissIntro();
+              }}
+              className="rounded-full bg-[var(--primary)] px-3 py-1.5 text-xs font-medium text-white"
+            >
+              {t('welcomeCity')}
+            </button>
+            <a href="/guide" className="rounded-full border border-[var(--border)] px-3 py-1.5 text-xs">
+              {t('welcomeGuide')}
+            </a>
+            <button
+              onClick={dismissIntro}
+              className="ml-auto px-2 py-1.5 text-xs text-[var(--muted)] underline"
+            >
+              {t('gotIt')}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <Concierge />
       <button
         onClick={() => router.push('/pins/new')}

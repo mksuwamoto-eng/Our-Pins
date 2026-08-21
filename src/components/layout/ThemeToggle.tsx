@@ -2,9 +2,11 @@
 
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Moon, Sun } from 'lucide-react';
 
 export function ThemeToggle() {
+  const t = useTranslations('header');
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -17,7 +19,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(next)}
-      aria-label="Toggle theme"
+      aria-label={t('toggleTheme')}
       className="rounded p-1"
     >
       {current === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

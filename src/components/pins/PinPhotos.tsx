@@ -11,6 +11,13 @@ import { cn } from '@/lib/utils';
 
 const MAX_PHOTOS = 4;
 
+// API errors arrive as stable codes; map them to `pin.errors.*` message keys.
+const PHOTO_ERROR_KEYS: Record<string, string> = {
+  bad_image_type: 'badImageType',
+  image_too_large: 'imageTooLarge',
+  photo_limit: 'photoLimit',
+};
+
 interface PhotoItem {
   id: string;
   url: string;
@@ -53,6 +60,7 @@ export function PinPhotos({
   highlight?: boolean;
 }) {
   const t = useTranslations('pin');
+  const te = useTranslations('pin.errors');
   const tCommon = useTranslations('common');
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
@@ -95,11 +103,12 @@ export function PinPhotos({
       const res = await fetch(`/api/pins/${pinId}/photos`, { method: 'POST', body: fd });
       if (!res.ok) {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(json.error ?? 'Upload failed');
+        const key = json.error ? PHOTO_ERROR_KEYS[json.error] : undefined;
+        throw new Error(key ? te(key) : tCommon('uploadFailed'));
       }
       await queryClient.invalidateQueries({ queryKey: ['pin-photos', pinId] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : tCommon('uploadFailed'));
     } finally {
       setBusy(false);
     }
@@ -110,13 +119,10 @@ export function PinPhotos({
     setBusy(true);
     try {
       const res = await fetch(`/api/pins/${pinId}/photos?photoId=${photoId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(json.error ?? 'Delete failed');
-      }
+      if (!res.ok) throw new Error('delete failed');
       await queryClient.invalidateQueries({ queryKey: ['pin-photos', pinId] });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+    } catch {
+      setError(tCommon('error'));
     } finally {
       setBusy(false);
     }

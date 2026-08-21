@@ -446,6 +446,7 @@ function ExistingPinView({
         {currentUserId !== pin.created_by ? (
           <VouchPanel
             pinId={pin.id}
+            categorySlug={category?.slug ?? null}
             onChange={() => queryClient.invalidateQueries({ queryKey: ['vouches', pin.id] })}
           />
         ) : null}

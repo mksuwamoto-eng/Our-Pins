@@ -14,7 +14,7 @@ const serif = Noto_Serif_JP({
 });
 
 export const metadata: Metadata = {
-  title: 'Our Pins',
+  title: { default: 'Our Pins', template: '%s — Our Pins' },
   description: 'A private, community-curated map of Japan.',
   applicationName: 'Our Pins',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Our Pins' },

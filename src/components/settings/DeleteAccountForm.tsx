@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 export function DeleteAccountForm() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const [confirm, setConfirm] = useState('');
   const [pending, setPending] = useState(false);
@@ -11,18 +14,20 @@ export function DeleteAccountForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    // The confirmation token is the literal word DELETE in both locales; the
+    // label and error name it explicitly.
     if (confirm !== 'DELETE') {
-      setError('Type DELETE in capital letters to confirm.');
+      setError(t('deleteTypeError'));
       return;
     }
     setPending(true);
     setError(null);
     try {
       const res = await fetch('/api/account/delete', { method: 'POST' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error('delete failed');
       router.push('/sign-in');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setError(tCommon('error'));
     } finally {
       setPending(false);
     }
@@ -31,7 +36,7 @@ export function DeleteAccountForm() {
   return (
     <form onSubmit={submit} className="mt-4 space-y-3">
       <label className="block text-sm">
-        Type <code>DELETE</code> to confirm:
+        {t.rich('deleteTypeToConfirm', { code: (chunks) => <code>{chunks}</code> })}
       </label>
       <input
         value={confirm}
@@ -44,7 +49,7 @@ export function DeleteAccountForm() {
         disabled={pending}
         className="rounded-lg bg-[var(--color-terracotta-500)] px-4 py-2 text-sm font-medium text-white"
       >
-        {pending ? 'Deleting…' : 'Delete my account'}
+        {pending ? t('deleting') : t('deleteSubmit')}
       </button>
     </form>
   );

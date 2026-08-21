@@ -5,8 +5,17 @@ import { useTranslations } from 'next-intl';
 import { CheckCircle, Heart } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { cn } from '@/lib/utils';
+import { SENSITIVE_CATEGORY_SLUGS } from '@/lib/categories/sensitive';
 
-export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () => void }) {
+export function VouchPanel({
+  pinId,
+  categorySlug,
+  onChange,
+}: {
+  pinId: string;
+  categorySlug?: string | null;
+  onChange?: () => void;
+}) {
   const t = useTranslations('pin');
   const tCommon = useTranslations('common');
   const [vouched, setVouched] = useState(false);
@@ -46,12 +55,12 @@ export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () =
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ comment: comment.trim() || undefined }),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error('vouch failed');
       setVouched(true);
       setShowCommentInput(false);
       onChange?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setError(tCommon('error'));
     } finally {
       setPending(false);
     }
@@ -62,12 +71,12 @@ export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () =
     setError(null);
     try {
       const res = await fetch(`/api/pins/${pinId}/vouch`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error('unvouch failed');
       setVouched(false);
       setComment('');
       onChange?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setError(tCommon('error'));
     } finally {
       setPending(false);
     }
@@ -103,6 +112,10 @@ export function VouchPanel({ pinId, onChange }: { pinId: string; onChange?: () =
           maxLength={500}
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm"
         />
+        <p className="text-xs text-[var(--muted)]">{t('attributionNote')}</p>
+        {categorySlug && SENSITIVE_CATEGORY_SLUGS.has(categorySlug) ? (
+          <p className="text-xs text-[var(--color-terracotta-500)]">{t('sensitiveNote')}</p>
+        ) : null}
         <div className="flex items-center gap-2">
           <button
             onClick={submitVouch}

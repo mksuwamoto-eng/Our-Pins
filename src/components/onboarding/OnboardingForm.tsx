@@ -17,7 +17,6 @@ interface Props {
   initial: {
     firstName: string;
     lastName: string;
-    displayPref: 'avatar_only' | 'avatar_name';
     instagram?: string | null;
     website?: string | null;
     linkedin?: string | null;
@@ -27,9 +26,24 @@ interface Props {
 
 export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Props) {
   const t = useTranslations('onboarding');
+  const te = useTranslations('onboarding.errors');
   const tCommon = useTranslations('common');
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Zod messages are stable codes (see schemas/profile.ts); map them to
+  // localized text, falling back to the raw message for anything unmapped
+  // (e.g. default max-length messages).
+  const ERROR_CODES = new Set([
+    'firstNameRequired',
+    'lastNameRequired',
+    'instagramInvalid',
+    'linkedinInvalid',
+    'bioTooLong',
+    'guidelinesRequired',
+    'nicknameRequired',
+  ]);
+  const loc = (msg?: string) => (msg && ERROR_CODES.has(msg) ? te(msg) : msg);
 
   const form = useForm<OnboardingInput>({
     // The schema is a ZodEffects (superRefine on the nickname), so the resolver
@@ -40,7 +54,6 @@ export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Prop
       lastName: initial.lastName,
       useNickname: false,
       nickname: '',
-      displayPref: initial.displayPref,
       instagram: initial.instagram ?? '',
       website: initial.website ?? '',
       linkedin: initial.linkedin ?? '',
@@ -60,7 +73,7 @@ export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Prop
     });
     if (!res.ok) {
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      setSubmitError(json.error ?? tCommon('error'));
+      setSubmitError(json.error === 'name_taken' ? te('nameTaken') : tCommon('error'));
       return;
     }
     router.push('/');
@@ -74,7 +87,7 @@ export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Prop
       <Field
         label={t('avatar')}
         help={avatarUrl ? t('avatarHelpImported') : t('avatarHelp')}
-        error={errors.avatarPath?.message}
+        error={loc(errors.avatarPath?.message)}
       >
         <AvatarUploader
           userId={userId}
@@ -88,14 +101,14 @@ export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Prop
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t('firstName')} error={errors.firstName?.message}>
+        <Field label={t('firstName')} error={loc(errors.firstName?.message)}>
           <input
             {...form.register('firstName')}
             autoComplete="given-name"
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
           />
         </Field>
-        <Field label={t('lastName')} error={errors.lastName?.message}>
+        <Field label={t('lastName')} error={loc(errors.lastName?.message)}>
           <input
             {...form.register('lastName')}
             autoComplete="family-name"
@@ -111,7 +124,7 @@ export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Prop
           <span>{t('useNickname')}</span>
         </label>
         {useNickname ? (
-          <Field help={t('nicknameHelp')} error={errors.nickname?.message}>
+          <Field help={t('nicknameHelp')} error={loc(errors.nickname?.message)}>
             <input
               {...form.register('nickname')}
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
@@ -120,42 +133,49 @@ export function OnboardingForm({ userId, linePicture, avatarUrl, initial }: Prop
         ) : null}
       </div>
 
-      <Field label={t('bio')} help={t('bioHelp')} error={errors.bio?.message}>
-        <textarea
-          {...form.register('bio')}
-          rows={3}
-          placeholder={t('bioPlaceholder')}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-        />
-      </Field>
+      <details className="rounded-lg border border-[var(--border)] px-4 py-3">
+        <summary className="cursor-pointer select-none text-sm font-medium text-[var(--muted)]">
+          {t('moreOptional')}
+        </summary>
+        <div className="mt-4 space-y-6">
+          <Field label={t('bio')} help={t('bioHelp')} error={loc(errors.bio?.message)}>
+            <textarea
+              {...form.register('bio')}
+              rows={3}
+              placeholder={t('bioPlaceholder')}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+            />
+          </Field>
 
-      <Field label={t('linkedin')} help={t('linkedinHelp')} error={errors.linkedin?.message}>
-        <input
-          {...form.register('linkedin')}
-          inputMode="url"
-          placeholder="linkedin.com/in/yourname"
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-        />
-      </Field>
+          <Field label={t('linkedin')} help={t('linkedinHelp')} error={loc(errors.linkedin?.message)}>
+            <input
+              {...form.register('linkedin')}
+              inputMode="url"
+              placeholder="linkedin.com/in/…"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+            />
+          </Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t('instagram')} error={errors.instagram?.message}>
-          <input
-            {...form.register('instagram')}
-            placeholder="yourhandle"
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-          />
-        </Field>
-        <Field label={t('website')} error={errors.website?.message}>
-          <input
-            {...form.register('website')}
-            placeholder="https://"
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-          />
-        </Field>
-      </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t('instagram')} error={loc(errors.instagram?.message)}>
+              <input
+                {...form.register('instagram')}
+                placeholder="@handle"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+              />
+            </Field>
+            <Field label={t('website')} error={loc(errors.website?.message)}>
+              <input
+                {...form.register('website')}
+                placeholder="https://…"
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+              />
+            </Field>
+          </div>
+        </div>
+      </details>
 
-      <Field error={errors.acceptedGuidelines?.message}>
+      <Field error={loc(errors.acceptedGuidelines?.message)}>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" {...form.register('acceptedGuidelines')} className="mt-1" />
           <span>

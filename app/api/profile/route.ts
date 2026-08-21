@@ -8,12 +8,13 @@ const editSchema = z.object({
   instagram: z
     .string()
     .trim()
-    .max(30, 'Instagram handle is at most 30 characters')
+    .max(30, 'instagramInvalid')
     .transform((v) => v.replace(/^@/, ''))
     // Must match the DB CHECK on profiles.instagram, or the save 500s at the
     // DB after passing app validation (onboarding enforces the same regex).
+    // Messages are stable codes mapped to localized text client-side.
     .refine((v) => /^[a-zA-Z0-9._]{1,30}$/.test(v), {
-      message: 'Instagram handles use letters, numbers, dots and underscores (max 30)',
+      message: 'instagramInvalid',
     })
     .optional()
     .or(z.literal('').transform(() => undefined)),
@@ -32,14 +33,14 @@ const editSchema = z.object({
     .max(200)
     .transform((v) => (v ? `https://${v.replace(/^https?:\/\//i, '')}` : v))
     .refine((v) => !v || /^https:\/\/([a-z0-9-]+\.)?linkedin\.com\/.+/i.test(v), {
-      message: 'Paste the address of your LinkedIn profile',
+      message: 'linkedinInvalid',
     })
     .optional()
     .or(z.literal('').transform(() => undefined)),
   bio: z
     .string()
     .trim()
-    .max(500, 'Bio is at most 500 characters')
+    .max(500, 'bioTooLong')
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
@@ -70,10 +71,8 @@ export async function PATCH(req: Request) {
     .neq('id', user.id)
     .maybeSingle();
   if (clash) {
-    return NextResponse.json(
-      { error: 'That name is already taken — try a nickname or add an initial.' },
-      { status: 409 },
-    );
+    // Machine code, not display text — the client maps it to a localized string.
+    return NextResponse.json({ error: 'name_taken' }, { status: 409 });
   }
 
   const update: Record<string, unknown> = {

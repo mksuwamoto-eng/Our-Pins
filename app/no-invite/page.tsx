@@ -16,6 +16,7 @@ export default async function NoInvitePage({
       <p className="mb-2 text-[var(--muted)]">{t('noInviteBody')}</p>
       {reason === 'expired' ? <p className="text-sm text-[var(--color-terracotta-500)]">{reasonT('expiredBody')}</p> : null}
       {reason === 'invalid' ? <p className="text-sm text-[var(--color-terracotta-500)]">{reasonT('invalidBody')}</p> : null}
+      <p className="mt-4 text-sm text-[var(--muted)]">{t('noInviteRecovery')}</p>
     </main>
   );
 }

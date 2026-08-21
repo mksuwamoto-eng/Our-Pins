@@ -18,7 +18,7 @@ export default async function SettingsPage() {
         <SignOutButton label={tAuth('signOut')} />
         <div className="card p-4">
           <h2 className="font-medium text-[var(--color-terracotta-500)]">{t('danger')}</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">{t('deleteAccountConfirm')}</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">{t('deleteAccountExplainer')}</p>
           <Link href="/settings/danger" className="mt-2 inline-block text-sm underline">
             {t('deleteAccount')}
           </Link>

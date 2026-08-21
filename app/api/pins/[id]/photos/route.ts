@@ -14,6 +14,9 @@ const MAX_PHOTOS = 4;
  * Bytes come through this route and are written with the admin client (same
  * model as the avatar route), which lets us enforce the per-pin cap and create
  * the pin_photos row atomically instead of relying on storage RLS alone.
+ *
+ * Client-visible errors are stable machine codes (bad_image_type, image_too_large,
+ * photo_limit) mapped to localized strings in PinPhotos/AvatarUploader.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -40,10 +43,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   const ext = ALLOWED[file.type];
   if (!ext) {
-    return NextResponse.json({ error: 'Use a JPEG, PNG, or WebP image' }, { status: 400 });
+    return NextResponse.json({ error: 'bad_image_type' }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Image must be under 5MB' }, { status: 400 });
+    return NextResponse.json({ error: 'image_too_large' }, { status: 400 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -56,7 +59,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: 'Could not add photo' }, { status: 500 });
   }
   if ((count ?? 0) >= MAX_PHOTOS) {
-    return NextResponse.json({ error: `Up to ${MAX_PHOTOS} photos per pin` }, { status: 409 });
+    return NextResponse.json({ error: 'photo_limit' }, { status: 409 });
   }
 
   const photoId = crypto.randomUUID();

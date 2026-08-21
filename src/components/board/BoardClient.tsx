@@ -43,6 +43,7 @@ export function BoardClient({ posts, meId, isAdmin }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   // Compact-by-default rows; a category section can be folded away.
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
@@ -93,6 +94,7 @@ export function BoardClient({ posts, meId, isAdmin }: Props) {
   }
 
   async function onArchive(id: string) {
+    setConfirmRemoveId(null);
     setArchivingId(id);
     setError(null);
     try {
@@ -151,12 +153,19 @@ export function BoardClient({ posts, meId, isAdmin }: Props) {
               {canArchive ? (
                 <>
                   <span>·</span>
+                  {/* Two-tap confirm, matching pins: only admins can restore an
+                      archived post, so a single mis-tap shouldn't lose it. */}
                   <button
-                    onClick={() => onArchive(post.id)}
+                    onClick={() =>
+                      confirmRemoveId === post.id ? onArchive(post.id) : setConfirmRemoveId(post.id)
+                    }
                     disabled={archivingId === post.id}
-                    className="underline decoration-dotted disabled:opacity-60"
+                    className={cn(
+                      'underline decoration-dotted disabled:opacity-60',
+                      confirmRemoveId === post.id && 'font-medium text-[var(--color-terracotta-500)]',
+                    )}
                   >
-                    {t('remove')}
+                    {confirmRemoveId === post.id ? t('confirmRemove') : t('remove')}
                   </button>
                 </>
               ) : null}

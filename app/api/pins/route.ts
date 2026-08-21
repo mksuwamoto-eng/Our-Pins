@@ -38,7 +38,8 @@ export async function POST(req: Request) {
     // Unique violation on google_place_id: someone pinned this place first.
     if (error.code === '23505') {
       return NextResponse.json(
-        { error: 'This place has already been pinned by the community.' },
+        // Machine code, not display text — clients map it to a localized string.
+        { error: 'already_pinned' },
         { status: 409 },
       );
     }

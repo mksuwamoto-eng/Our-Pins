@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { LifeBuoy, HelpCircle, ScrollText, MessageSquarePlus } from 'lucide-react';
+import { LifeBuoy, HelpCircle, ScrollText, MessageSquarePlus, Shield } from 'lucide-react';
 import { FeedbackSheet } from '@/components/feedback/FeedbackSheet';
 
 /**
@@ -59,6 +59,15 @@ export function HelpMenu() {
           >
             <ScrollText className="h-4 w-4 shrink-0 text-[var(--muted)]" />
             <span>{t('guidelines')}</span>
+          </Link>
+          <Link
+            href="/privacy"
+            role="menuitem"
+            className={itemClass}
+            onClick={() => setOpen(false)}
+          >
+            <Shield className="h-4 w-4 shrink-0 text-[var(--muted)]" />
+            <span>{t('privacy')}</span>
           </Link>
           <button
             type="button"
