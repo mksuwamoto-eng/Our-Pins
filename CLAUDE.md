@@ -503,6 +503,46 @@ In `supabase/migrations/`:
   stays null for reserved-but-never-answered rows (guard/model failures).
   RLS-enabled-no-policies (service-role only) unchanged from 0013.
   Disclosed in the privacy policy. Applied to cloud July 9, 2026.
+- `0027` — multi-use invite links: `invites.max_uses` / `use_count` /
+  explicit `revoked_at` (revocation was previously inferred from an epoch
+  `expires_at`, so naturally-expired invites rendered as "Revoked"), plus an
+  `invite_uses` table recording who redeemed which link. Makes a single
+  link postable to the whole LINE group. `accept_invite` rewritten again
+  (still `security definer`, self-only guard from 0011 preserved).
+- `0028` — `profiles.linkedin` (full https URL, not a handle — LinkedIn slugs
+  vary) + CHECK + additive column grant per the 0012 pattern.
+- `0029` — account deletion now matches the stated "retained but anonymised"
+  policy. `profiles.id` had `ON DELETE CASCADE` to `auth.users`, so the
+  anonymised row was destroyed right after the scrub and the cascade fanned
+  out through pins → vouches (**including other members' vouches**),
+  board_posts, resources, feedback. Drops the FK (name-agnostic lookup) and
+  extends `delete_user`'s scrub to `bio` (0016) and `linkedin` (0028).
+- `0030` — **critical fix** (external review, Aug 22, 2026): `delete_user`
+  is `security definer` and granted to `authenticated` but never checked
+  `p_user = auth.uid()`, so any signed-in member could scrub another
+  member's private profile, revoke their membership, and archive their pins
+  using a UUID read from `profiles`. Same guard pattern as `accept_invite`
+  in 0011. 0029's rewrite had re-shipped the gap.
+- `0031` — **closes the `private_profiles` least-privilege gap** (the
+  follow-up sweep 0025's comment flagged). The table still carried Supabase's
+  default table-level `GRANT ALL` to `authenticated`, so a member could
+  `PATCH /rest/v1/private_profiles?id=eq.<own-uid>` and overwrite
+  `real_name` / `email` / `line_sub` — service-role-only columns. RLS (0011)
+  confined writes to their *own* row but not to the right columns. Revokes
+  insert/update/delete from `authenticated` (SELECT stays; RLS already limits
+  it to admin-or-self) and drops `anon` grants. All three write sites
+  (`onboarding/route.ts`, `session.ts` ×2) use the admin client, and
+  `delete_user` is `security definer`, so nothing broke. Applied Aug 22, 2026;
+  verified against prod with minted-JWT probes (authenticated
+  INSERT/UPDATE/DELETE → 42501, SELECT → 200, anon → 401, `profiles`
+  column grants from 0012 unaffected).
+- `0032` — pins `set search_path = public` on `tg_creator_vouch`, the last
+  `security definer` object without one (`access_token_hook`,
+  `accept_invite`, `delete_user` have had it since 0006/0007). Body
+  byte-for-byte 0003's, so `create or replace` preserved the oid and the
+  `pins_creator_vouch` trigger needed no DDL. Consistency /
+  defence-in-depth, not a live hole (the body schema-qualifies
+  `public.vouches`). Applied Aug 22, 2026.
 
 ---
 
@@ -546,6 +586,24 @@ RLS/privilege holes. Robustness/consistency fixes shipped (branch
 - Members-grid vouch count matched to the profile page (excludes
   archived-pin vouches).
 Full write-up was kept in the session scratchpad, not the repo.
+
+**Third audit (Aug 22, 2026)** — external security review + a DB
+least-privilege sweep. Three findings, all fixed and deployed:
+- **`delete_user` RPC accepted any p_user** (critical) — `security
+  definer`, granted to `authenticated`, no self-check, so any member
+  could scrub another member's private profile, revoke their
+  membership, and archive their pins using a UUID read from
+  `profiles`. Fixed by 0030 (same guard as `accept_invite`/0011).
+  Note 0029's rewrite had *re-shipped* a gap 0011 had already taught
+  us about — when rewriting a `security definer` RPC, re-check the
+  caller guard.
+- **Digest cron endpoint trusted the spoofable `x-vercel-cron`
+  header** — removed; `CRON_SECRET` bearer token is now REQUIRED and
+  the route fails closed without it (so the env var must be set in
+  Vercel). Commit `e03f57d`.
+- **`private_profiles` kept the default table-level `GRANT ALL`** —
+  fixed by 0031; see the migration ledger above for the probe results.
+  0032 pinned the last unset `search_path` while in there.
 
 **Important architecture note from the audit:** the admin client
 (service_role) bypasses RLS *and* column grants, which is why several
