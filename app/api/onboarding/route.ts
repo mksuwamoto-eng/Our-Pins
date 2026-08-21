@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
-import { onboardingSchema } from '@/lib/schemas/profile';
+import { onboardingSchema, resolveNames } from '@/lib/schemas/profile';
 
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
@@ -15,11 +15,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
   const v = parsed.data;
+  // The form collects first + last name (and an optional opt-in pseudonym);
+  // everything downstream still works in terms of one display name and one
+  // private real name.
+  const { realName, displayName } = resolveNames(v);
 
   // Check display_name is not already taken by another member (case-insensitive).
   // Escape LIKE wildcards so a name containing % or _ is matched literally,
   // not as a pattern (otherwise "M_ko" would falsely clash with "Mako").
-  const namePattern = v.displayName.replace(/[\\%_]/g, '\\$&');
+  const namePattern = displayName.replace(/[\\%_]/g, '\\$&');
   const { data: clash } = await supabase
     .from('profiles')
     .select('id')
@@ -28,7 +32,7 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (clash) {
     return NextResponse.json(
-      { error: 'That name is already taken — try a nickname or add an initial.' },
+      { error: 'Someone already uses that name — tick “Show a different name” to pick another.' },
       { status: 409 },
     );
   }
@@ -36,7 +40,7 @@ export async function POST(req: Request) {
   const cleanInsta = v.instagram?.trim() || null;
   const cleanWebsite = v.website?.trim() || null;
   const update: Record<string, unknown> = {
-    display_name: v.displayName,
+    display_name: displayName,
     display_pref: v.displayPref,
     instagram: cleanInsta,
     website: cleanWebsite,
@@ -58,12 +62,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 
-  if (v.realName) {
+  {
     // private_profiles has no INSERT policy by design (same as profiles);
     // first-time onboarding has to use the admin client.
     const { error: upPrivErr } = await admin
       .from('private_profiles')
-      .upsert({ id: user.id, real_name: v.realName, email: v.email ?? null }, { onConflict: 'id' });
+      .upsert({ id: user.id, real_name: realName, email: v.email ?? null }, { onConflict: 'id' });
     if (upPrivErr) {
       console.error('onboarding private_profiles upsert failed:', upPrivErr);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });

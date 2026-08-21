@@ -14,9 +14,16 @@ export default async function OnboardingPage() {
   const t = await getTranslations('onboarding');
 
   // LINE sign-ins carry the LINE profile photo in user_metadata (session.ts).
-  // Surface it so onboarding can offer a one-click "Use my LINE photo".
+  // It is imported automatically at sign-in (ensureLineAvatar); this still
+  // backs a manual "Use my LINE photo" button for anyone who clears it.
   const linePicture =
     typeof user.user_metadata?.picture === 'string' ? user.user_metadata.picture : null;
+
+  // Pre-fill from the LINE display name where we can — most Greek LINE users
+  // have "First Last" set, which makes the name step a confirmation instead of
+  // typing. Anything past the first space is the surname.
+  const lineName = typeof user.user_metadata?.name === 'string' ? user.user_metadata.name : '';
+  const [lineFirst = '', ...lineRest] = lineName.trim().split(/\s+/);
 
   return (
     <main className="mx-auto max-w-xl px-6 py-10">
@@ -25,7 +32,8 @@ export default async function OnboardingPage() {
         userId={user.id}
         linePicture={linePicture}
         initial={{
-          displayName: profile?.display_name ?? '',
+          firstName: lineFirst,
+          lastName: lineRest.join(' '),
           displayPref: profile?.display_pref ?? 'avatar_name',
           instagram: profile?.instagram ?? '',
           website: profile?.website ?? '',

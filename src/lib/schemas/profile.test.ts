@@ -1,13 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { onboardingSchema } from './profile';
+import { onboardingSchema, resolveNames } from './profile';
 
 describe('onboardingSchema', () => {
   const valid = {
-    displayName: 'Mako',
+    firstName: 'Makoto',
+    lastName: 'Suwamoto',
     avatarPath: 'avatars/mako.jpg',
     displayPref: 'avatar_name' as const,
     acceptedGuidelines: true as const,
   };
+
+  it('requires both a first name and a surname', () => {
+    expect(onboardingSchema.safeParse({ ...valid, firstName: '' }).success).toBe(false);
+    expect(onboardingSchema.safeParse({ ...valid, lastName: '  ' }).success).toBe(false);
+  });
+
+  it('requires a nickname once the opt-in box is ticked', () => {
+    expect(onboardingSchema.safeParse({ ...valid, useNickname: true }).success).toBe(false);
+    expect(
+      onboardingSchema.safeParse({ ...valid, useNickname: true, nickname: 'Mako' }).success,
+    ).toBe(true);
+  });
 
   it('accepts the minimum valid payload', () => {
     expect(onboardingSchema.safeParse(valid).success).toBe(true);
@@ -40,5 +53,38 @@ describe('onboardingSchema', () => {
     const parsed = onboardingSchema.safeParse({ ...valid, instagram: '@mako.jp' });
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.instagram).toBe('mako.jp');
+  });
+});
+
+describe('resolveNames', () => {
+  const base = onboardingSchema.parse({
+    firstName: 'Makoto',
+    lastName: 'Suwamoto',
+    avatarPath: 'avatars/mako.jpg',
+    displayPref: 'avatar_name' as const,
+    acceptedGuidelines: true as const,
+  });
+
+  it('shows the real name by default', () => {
+    expect(resolveNames(base)).toEqual({
+      realName: 'Makoto Suwamoto',
+      displayName: 'Makoto Suwamoto',
+    });
+  });
+
+  it('keeps the real name private when a nickname is chosen', () => {
+    const withNickname = onboardingSchema.parse({
+      firstName: 'Makoto',
+      lastName: 'Suwamoto',
+      useNickname: true,
+      nickname: 'Mako',
+      avatarPath: 'avatars/mako.jpg',
+      displayPref: 'avatar_name' as const,
+      acceptedGuidelines: true as const,
+    });
+    expect(resolveNames(withNickname)).toEqual({
+      realName: 'Makoto Suwamoto',
+      displayName: 'Mako',
+    });
   });
 });

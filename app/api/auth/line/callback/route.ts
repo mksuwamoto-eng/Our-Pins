@@ -6,6 +6,7 @@ import {
   upsertUserFromLine,
 } from '@/lib/auth/session';
 import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
+import { ensureLineAvatar } from '@/lib/auth/line-avatar';
 import { safeNext } from '@/lib/auth/safe-next';
 import { publicEnv } from '@/lib/env';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -64,6 +65,9 @@ export async function GET(req: NextRequest) {
     if (user) {
       const consumed = inviteToken ? await consumeInviteByToken(user.id, inviteToken) : null;
       if (!consumed) await consumeInviteCookie(user.id);
+      // Give them their LINE photo automatically. No-op once they have any
+      // avatar of their own, so a later choice is never overwritten.
+      await ensureLineAvatar(user.id, user.user_metadata?.picture);
       await supabase.auth.refreshSession();
     }
 

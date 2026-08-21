@@ -6,13 +6,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { onboardingSchema, type OnboardingInput } from '@/lib/schemas/profile';
+import type { Resolver } from 'react-hook-form';
 import { AvatarUploader } from './AvatarUploader';
 
 interface Props {
   userId: string;
   linePicture?: string | null;
   initial: {
-    displayName: string;
+    firstName: string;
+    lastName: string;
     displayPref: 'avatar_only' | 'avatar_name';
     instagram?: string | null;
     website?: string | null;
@@ -26,15 +28,22 @@ export function OnboardingForm({ userId, linePicture, initial }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<OnboardingInput>({
-    resolver: zodResolver(onboardingSchema),
+    // The schema is a ZodEffects (superRefine on the nickname), so the resolver
+    // can't infer the field type from the object shape alone.
+    resolver: zodResolver(onboardingSchema) as Resolver<OnboardingInput>,
     defaultValues: {
-      displayName: initial.displayName,
+      firstName: initial.firstName,
+      lastName: initial.lastName,
+      useNickname: false,
+      nickname: '',
       displayPref: initial.displayPref,
       instagram: initial.instagram ?? '',
       website: initial.website ?? '',
       avatarPath: '',
     },
   });
+
+  const useNickname = form.watch('useNickname');
 
   async function onSubmit(values: OnboardingInput) {
     setSubmitError(null);
@@ -65,19 +74,38 @@ export function OnboardingForm({ userId, linePicture, initial }: Props) {
         />
       </Field>
 
-      <Field label={t('displayName')} help={t('displayNameHelp')} error={errors.displayName?.message}>
-        <input
-          {...form.register('displayName')}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-        />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={t('firstName')} error={errors.firstName?.message}>
+          <input
+            {...form.register('firstName')}
+            autoComplete="given-name"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+          />
+        </Field>
+        <Field label={t('lastName')} error={errors.lastName?.message}>
+          <input
+            {...form.register('lastName')}
+            autoComplete="family-name"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+          />
+        </Field>
+      </div>
+      <p className="-mt-4 text-sm text-[var(--muted)]">{t('nameHelp')}</p>
 
-      <Field label={t('realName')} help={t('realNameHelp')} error={errors.realName?.message}>
-        <input
-          {...form.register('realName')}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-        />
-      </Field>
+      <div className="space-y-2">
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" {...form.register('useNickname')} className="mt-1" />
+          <span>{t('useNickname')}</span>
+        </label>
+        {useNickname ? (
+          <Field help={t('nicknameHelp')} error={errors.nickname?.message}>
+            <input
+              {...form.register('nickname')}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
+            />
+          </Field>
+        ) : null}
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label={t('instagram')} error={errors.instagram?.message}>

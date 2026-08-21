@@ -47,6 +47,16 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
     if (existing.email !== email) {
       await admin.from('private_profiles').update({ email }).eq('id', existing.id);
     }
+    // Refresh the LINE profile photo URL on every sign-in. It used to be
+    // written only when the auth user was first created, so members who joined
+    // before the photo was captured had no picture in their metadata and the
+    // LINE-avatar import could never fire for them. LINE also rotates these
+    // CDN URLs when a member changes their photo.
+    if (line.picture && authUser.user.user_metadata?.picture !== line.picture) {
+      await admin.auth.admin.updateUserById(existing.id, {
+        user_metadata: { ...authUser.user.user_metadata, picture: line.picture },
+      });
+    }
     return { userId: existing.id, email, isNewUser: false };
   }
 
