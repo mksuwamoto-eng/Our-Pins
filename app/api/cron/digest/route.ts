@@ -8,9 +8,11 @@ import { getServerEnv } from '@/lib/env';
 export const maxDuration = 60;
 
 function authorized(req: Request, secret?: string): boolean {
-  // Vercel Cron invocations carry this header (set internally by Vercel, not
-  // spoofable from the public internet). Otherwise require the bearer secret.
-  if (req.headers.get('x-vercel-cron')) return true;
+  // Vercel docs don't guarantee x-vercel-cron is stripped from external
+  // requests, so the bearer secret is the only accepted proof. When
+  // CRON_SECRET is set in the Vercel env, Vercel Cron sends it automatically
+  // as `Authorization: Bearer <CRON_SECRET>`. No secret configured → fail
+  // closed (every call 401s, including Vercel's own).
   if (secret && req.headers.get('authorization') === `Bearer ${secret}`) return true;
   return false;
 }

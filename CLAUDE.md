@@ -167,8 +167,10 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 > managed at **`/admin/line-groups`** (label + per-group digest toggle). Join is
 > **silent** (no auto-message) and digest **defaults OFF** per group (0020/0021),
 > so adding the bot to a group has ZERO visible effect until an admin toggles it
-> on. Cron route self-authenticates (`CRON_SECRET` env, or Vercel's
-> `x-vercel-cron` header) and is allow-listed in `middleware.ts`. A localhost
+> on. Cron route self-authenticates via `CRON_SECRET` bearer token
+> (**required** since Aug 22, 2026 — the spoofable `x-vercel-cron` header
+> branch was removed; the route fails closed without the secret, so the env
+> var must be set in Vercel) and is allow-listed in `middleware.ts`. A localhost
 > dry-run (`GET /api/cron/digest?dry=1`, dev-only) previews the text against prod
 > data without posting. Verified on a test group (Mako ran a manual send).
 > Passive `@parea` group **Q&A stays OFF** (still gated on `LINE_GROUP_ID`) —

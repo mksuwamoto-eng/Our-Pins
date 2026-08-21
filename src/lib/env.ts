@@ -22,7 +22,8 @@ const serverSchema = publicSchema.extend({
   // The one group the bot answers in; until set, group messages are ignored.
   LINE_GROUP_ID: z.string().min(1).optional(),
   // Shared secret the weekly-digest cron presents (Authorization: Bearer …).
-  // Vercel Cron invocations are also accepted via the x-vercel-cron header.
+  // Vercel Cron sends it automatically once the env var is set in Vercel.
+  // REQUIRED in practice: without it the digest route rejects every call.
   CRON_SECRET: z.string().min(1).optional(),
   GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
   // Optional: the Parea Concierge returns 503 until this is set.
