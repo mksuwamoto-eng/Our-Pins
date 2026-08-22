@@ -26,6 +26,13 @@ const config: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          // Production is https-only on Vercel. No preload directive: that
+          // submits the apex domain to the browser preload list, which is
+          // effectively permanent and not ours to commit (*.vercel.app).
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains',
+          },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

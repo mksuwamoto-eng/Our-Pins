@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isOwnAvatarPath } from '@/lib/auth/line-avatar';
 
 const editSchema = z.object({
   displayName: z.string().trim().min(1).max(60),
@@ -82,7 +83,12 @@ export async function PATCH(req: Request) {
     bio: v.bio?.trim() || null,
     linkedin: v.linkedin?.trim() || null,
   };
-  if (v.avatarPath) update.avatar_path = v.avatarPath;
+  if (v.avatarPath) {
+    if (!isOwnAvatarPath(v.avatarPath, user.id)) {
+      return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
+    }
+    update.avatar_path = v.avatarPath;
+  }
 
   const { error } = await supabase.from('profiles').update(update).eq('id', user.id);
   if (error) {

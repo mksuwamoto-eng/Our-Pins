@@ -5,10 +5,10 @@ import { publicEnv } from '@/lib/env';
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const next = url.searchParams.get('next') ?? '/';
-  const invite = url.searchParams.get('invite');
+  // No ?invite= passthrough: the Google path is admin-only and never grants
+  // membership — see the comment in ../callback/route.ts.
   const callback = new URL(`${publicEnv.NEXT_PUBLIC_SITE_URL}/api/auth/google/callback`);
   callback.searchParams.set('next', next);
-  if (invite) callback.searchParams.set('invite', invite);
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',

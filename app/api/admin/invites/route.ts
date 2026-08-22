@@ -1,20 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/session';
 import { inviteCreateSchema } from '@/lib/schemas/invite';
 
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new NextResponse('unauth', { status: 401 });
-
   // Middleware gates /admin pages but NOT /api/admin/* (its check is
   // startsWith('/admin'), and this path is /api/admin/...). RLS already blocks
   // the insert for non-admins, but that surfaces as a 500 — check explicitly so
   // a non-admin gets a clean 403.
-  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (me?.role !== 'admin') return new NextResponse('forbidden', { status: 403 });
+  const caller = await requireAdmin();
+  if (!caller) return new NextResponse('forbidden', { status: 403 });
+  const { supabase } = caller;
 
   const body = await req.json().catch(() => ({}));
   const parsed = inviteCreateSchema.safeParse(body);
@@ -23,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   const rows = Array.from({ length: parsed.data.count }, () => ({
-    created_by: user.id,
+    created_by: caller.userId,
     note: parsed.data.note ?? null,
     max_uses: parsed.data.maxUses,
     // Omitting expires_at falls back to the column default (14 days).

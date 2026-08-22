@@ -1,17 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
-import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
 import { safeNext } from '@/lib/auth/safe-next';
 import { publicEnv } from '@/lib/env';
 
 // Mirrors app/api/auth/google/callback/route.ts. Magic link emails point here
-// with ?code=...; the post-auth bootstrap (profile upsert + invite consume +
-// session refresh) is identical to the Google flow.
+// with ?code=...; the post-auth bootstrap (profile upsert + session refresh)
+// is identical to the Google flow — including the deliberate absence of invite
+// consumption, so membership stays LINE-only.
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const next = safeNext(url.searchParams.get('next'));
-  const inviteToken = url.searchParams.get('invite');
 
   if (!code) {
     return NextResponse.redirect(`${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in?error=Missing+code`);
@@ -38,10 +37,6 @@ export async function GET(req: NextRequest) {
       },
       { onConflict: 'id', ignoreDuplicates: true },
     );
-    // Prefer the URL-borne invite token (survives cookie loss / cross-device
-    // magic-link clicks). Fall back to the cookie for the happy path.
-    const consumed = inviteToken ? await consumeInviteByToken(user.id, inviteToken) : null;
-    if (!consumed) await consumeInviteCookie(user.id);
     await supabase.auth.refreshSession();
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/session';
 
 const patchSchema = z
   .object({
@@ -16,14 +17,9 @@ const patchSchema = z
 // 0012 revoked the authenticated role's UPDATE on those columns, so the old
 // browser-client update silently no-op'd (permission denied, error discarded).
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new NextResponse('unauth', { status: 401 });
   // /api/admin/* is not middleware-gated — check admin explicitly.
-  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (me?.role !== 'admin') return new NextResponse('forbidden', { status: 403 });
+  const caller = await requireAdmin();
+  if (!caller) return new NextResponse('forbidden', { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = patchSchema.safeParse(body);
@@ -33,7 +29,7 @@ export async function POST(req: Request) {
   const { id, is_member, role } = parsed.data;
 
   // Guard against self-lockout: an admin can't revoke or demote themselves.
-  if (id === user.id && (is_member === false || role === 'member')) {
+  if (id === caller.userId && (is_member === false || role === 'member')) {
     return new NextResponse('You can’t revoke or demote yourself', { status: 400 });
   }
 

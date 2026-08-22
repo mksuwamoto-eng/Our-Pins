@@ -11,7 +11,10 @@ const publicSchema = z.object({
 
 const serverSchema = publicSchema.extend({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SUPABASE_JWT_SECRET: z.string().min(1),
+  // Optional: nothing in the app reads it. It exists for out-of-band RLS
+  // probing (minting a member JWT), so a clean clone shouldn't fail to boot
+  // without it.
+  SUPABASE_JWT_SECRET: z.string().min(1).optional(),
   LINE_CHANNEL_ID: z.string().min(1),
   LINE_CHANNEL_SECRET: z.string().min(1),
   // Optional: Messaging API channel (the Parea LINE bot). Separate channel —

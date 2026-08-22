@@ -2,7 +2,9 @@
  * LINE Login → Supabase session bridge (Path B from the plan).
  *
  * Flow (server-side only):
- *   1. /api/auth/line/start  generates state + PKCE, redirects to LINE.
+ *   1. /api/auth/line/start  generates state + nonce, redirects to LINE.
+ *      (No PKCE: this is a confidential client — the token exchange is
+ *      server-side and authenticates with the channel secret.)
  *   2. /api/auth/line/callback receives `code`, exchanges with LINE for an
  *      ID token, verifies signature against LINE's JWKS, and validates claims.
  *   3. We look up or create a Supabase auth.users row keyed off the LINE

@@ -5,6 +5,9 @@ import { publicEnv } from '@/lib/env';
 
 // Unlinked admin-only sign-in entry point. Not referenced from any nav or
 // public page — the public /sign-in flow is LINE-only. Bookmark this URL.
+// It deliberately does not accept an ?invite= token: this page is unlinked,
+// not authorized, so honouring invites here would let an invite holder join
+// through Google/email and skip the LINE-only membership rule.
 // Supabase error messages vary by version (e.g. "Token has expired",
 // "invalid_grant", "Email link is invalid or has expired"); match loosely
 // so the common case still gets the friendly copy.
@@ -19,14 +22,12 @@ function classifyAuthError(raw: string): 'expired' | 'generic' {
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string; invite?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const t = await getTranslations('auth');
   const params = await searchParams;
   const nextParam = params.next ?? '/';
   const nextEncoded = encodeURIComponent(nextParam);
-  const invite = params.invite ?? null;
-  const inviteQs = invite ? `&invite=${encodeURIComponent(invite)}` : '';
   const friendlyError = params.error
     ? t(classifyAuthError(params.error) === 'expired' ? 'linkExpired' : 'signInError')
     : null;
@@ -53,7 +54,7 @@ export default async function AdminLoginPage({
       ) : null}
 
       <div className="card flex flex-col gap-3 p-6">
-        <MagicLinkForm siteUrl={publicEnv.NEXT_PUBLIC_SITE_URL} next={nextParam} invite={invite} />
+        <MagicLinkForm siteUrl={publicEnv.NEXT_PUBLIC_SITE_URL} next={nextParam} />
 
         <div className="my-2 flex items-center gap-2 text-xs text-[var(--muted)]">
           <span className="h-px flex-1 bg-[var(--border)]" />
@@ -62,7 +63,7 @@ export default async function AdminLoginPage({
         </div>
 
         <a
-          href={`/api/auth/google/start?next=${nextEncoded}${inviteQs}`}
+          href={`/api/auth/google/start?next=${nextEncoded}`}
           className="flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 font-medium text-[var(--fg)] transition hover:bg-[var(--surface-subtle)]"
         >
           {t('signInWithGoogle')}

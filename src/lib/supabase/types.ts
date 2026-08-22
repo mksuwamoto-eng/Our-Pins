@@ -148,13 +148,6 @@ export type AcceptInviteResult =
   | 'exhausted'
   | 'invalid';
 
-export interface JwtClaims {
-  sub: string;
-  is_member?: boolean;
-  role?: Role;
-  exp: number;
-  iat: number;
-  aud: string;
-  iss?: string;
-  email?: string;
-}
+// (An unused JwtClaims interface used to live here. It still declared `role`,
+// which 0008 replaced with `user_role`, so it described a token shape that has
+// not existed since. Read claims through getCurrentClaims() instead.)

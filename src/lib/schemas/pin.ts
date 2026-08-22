@@ -1,21 +1,29 @@
 import { z } from 'zod';
 
-const addressComponentsSchema = z.array(
-  z.object({
-    long_name: z.string(),
-    short_name: z.string(),
-    types: z.array(z.string()),
-  }),
-);
+// Every field below is echoed from a Google Places response the browser hands
+// us, so the client is not a trustworthy bound. The caps are generous multiples
+// of what Places actually returns — they exist to stop a hand-rolled request
+// (or a direct PostgREST insert) storing megabyte rows, not to reject real
+// addresses.
+const addressComponentsSchema = z
+  .array(
+    z.object({
+      long_name: z.string().max(200),
+      short_name: z.string().max(200),
+      types: z.array(z.string().max(60)).max(20),
+    }),
+  )
+  .max(24);
 
 export const pinCreateSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  google_place_id: z.string().nullable().optional(),
-  address: z.string().trim().min(1),
+  // Google place ids are ~27-60 chars today; the cap is deliberately loose.
+  google_place_id: z.string().max(300).nullable().optional(),
+  address: z.string().trim().min(1).max(500),
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
-  prefecture: z.string().trim().min(1),
-  city: z.string().trim().nullable().optional(),
+  prefecture: z.string().trim().min(1).max(100),
+  city: z.string().trim().max(100).nullable().optional(),
   address_components: addressComponentsSchema.nullable().optional(),
   category_id: z.string().uuid(),
   vouch_note: z.string().trim().min(1).max(1000),

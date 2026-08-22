@@ -143,11 +143,42 @@ export async function getCurrentUser() {
   return data.user;
 }
 
+/**
+ * Single admin gate for every /api/admin/* route. Returns the verified user id,
+ * or null to 403.
+ *
+ * Two rules, both learned the hard way:
+ *  - Verify the user with getUser() (a real round-trip), not getSession()'s
+ *    decoded-but-unverified claims. getCurrentClaims() is a UI hint only.
+ *  - Read `role` from the database, not the JWT, so a demotion takes effect
+ *    without waiting for the member's token to refresh.
+ * /api/admin/* is NOT covered by the middleware /admin gate (that check is
+ * startsWith('/admin')), so this must live in-route.
+ */
+export async function requireAdmin() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (me?.role !== 'admin') return null;
+  // Hand back the session client too: routes that write through RLS reuse it
+  // instead of building a second one and paying for another getUser().
+  return { userId: user.id, supabase };
+}
+
 export async function getCurrentClaims() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getSession();
   if (!data.session) return null;
-  // Decode JWT body without verification (Supabase already validated it).
+  // Decode JWT body without verification. Fine for UI hints and middleware
+  // (which has already called getUser()); never as an authorization decision
+  // on its own — use requireAdmin() for that.
   const [, body] = data.session.access_token.split('.');
   if (!body) return null;
   try {

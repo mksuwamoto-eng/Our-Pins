@@ -1,51 +1,15 @@
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getTranslations } from 'next-intl/server';
-import { AppShell } from '@/components/layout/AppShell';
-import { VouchPanel } from '@/components/pins/VouchPanel';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { categoryLabel } from '@/lib/i18n/category';
+import { redirect } from 'next/navigation';
 
+/**
+ * Canonical pin detail lives in the map's PinSheet (photos, translations,
+ * avatars, place details, the sensitive-category notice, creator-aware vouch
+ * controls). This route used to render a second, thinner copy of that view —
+ * shared links and the post-create redirect landed on a degraded page that
+ * silently dropped the sensitive-category warning. Keep the URL working as a
+ * permalink and hand it to the real thing; MapView absorbs ?pin= and opens the
+ * sheet.
+ */
 export default async function PinDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const t = await getTranslations('pin');
-  const tc = await getTranslations('categories');
-  const supabase = await createSupabaseServerClient();
-  const { data: pin } = await supabase.from('pins').select('*').eq('id', id).maybeSingle();
-  if (!pin) notFound();
-
-  const { data: category } = await supabase.from('categories').select('*').eq('id', pin.category_id).maybeSingle();
-  const { data: vouches } = await supabase.from('vouches').select('*, voucher:profiles(*)').eq('pin_id', id);
-
-  return (
-    <AppShell>
-      <article className="mx-auto max-w-2xl px-4 py-6">
-        <Link href="/" className="text-sm text-[var(--muted)]">
-          ← {t('backToMap')}
-        </Link>
-        <h1 className="mt-2 font-serif text-3xl">{pin.name}</h1>
-        {category ? (
-          <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-xs text-white" style={{ background: category.color }}>
-            {categoryLabel(tc, category)}
-          </span>
-        ) : null}
-        <p className="mt-2 text-sm text-[var(--muted)]">{pin.address}</p>
-        <p className="mt-4 whitespace-pre-wrap">{pin.vouch_note}</p>
-
-        <VouchPanel pinId={pin.id} />
-
-        <h2 className="mt-8 font-serif text-xl">{t('vouchedBy')}</h2>
-        <ul className="mt-2 flex flex-wrap gap-2">
-          {(vouches ?? []).map((v) => {
-            const p = (v as unknown as { voucher: { display_name: string } | null }).voucher;
-            return (
-              <li key={v.id} className="rounded-full bg-[var(--surface-subtle)] px-3 py-1 text-sm">
-                {p?.display_name ?? t('former')}
-              </li>
-            );
-          })}
-        </ul>
-      </article>
-    </AppShell>
-  );
+  redirect(`/?pin=${encodeURIComponent(id)}`);
 }

@@ -23,8 +23,7 @@ const RESOURCE_EXCERPT_CHARS = 400;
 export async function buildCorpus(): Promise<string> {
   const admin = createSupabaseAdminClient();
 
-  const [{ data: pins }, { data: vouches }, { data: profiles }, { data: categories }, { data: posts }, { data: resources }] =
-    await Promise.all([
+  const results = await Promise.all([
       admin
         .from('pins')
         .select('id, name, address, prefecture, city, category_id, vouch_note, created_by, created_at')
@@ -48,6 +47,23 @@ export async function buildCorpus(): Promise<string> {
         .is('archived_at', null)
         .order('created_at', { ascending: false }),
     ]);
+
+  // A failed query would hand Parea a corpus that is missing a whole section
+  // while looking complete, and she would answer confidently from it ("nobody
+  // has pinned anything in Osaka"). Fail closed instead — the caller turns
+  // this into a 'model_error' the member can retry.
+  const corpusError = results.find((r) => r.error)?.error;
+  if (corpusError) {
+    throw new Error(`concierge corpus query failed: ${corpusError.message}`);
+  }
+  const [
+    { data: pins },
+    { data: vouches },
+    { data: profiles },
+    { data: categories },
+    { data: posts },
+    { data: resources },
+  ] = results;
 
   const nameOf = new Map<string, string>();
   for (const p of profiles ?? []) nameOf.set(p.id, p.display_name);

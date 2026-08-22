@@ -399,11 +399,22 @@ In rough priority:
    `translations` for pre-existing pins/vouches (script not written);
    board post *titles* still not translated; Google opening-hours text
    still comes back in the Maps-loader language.
-9. **Mobile UX pass**. App is shipped but never tested on a real iOS
+9. **DB/RLS integration tests** (new, Aug 22, 2026 sweep). 33 security-
+   sensitive migrations, zero tests that execute them. Wanted: a CI job that
+   `supabase db reset`s a disposable local project and runs an authorization
+   matrix (anon / member / owner / admin) over every table — the minted-JWT
+   probe pattern already used ad hoc in these sessions, made permanent. Also
+   put the Playwright smoke in CI against the built app (it runs, but only
+   locally). Blocked on nothing; just a session's work.
+10. **`package.json` pins `supabase` at 1.219.2**, which errors on
+   `major_version = 17` in `supabase/config.toml`. Every `db push` in practice
+   uses the global Homebrew CLI (2.98.2). Either bump the pin to match or drop
+   the devDependency — right now it's a trap for a fresh clone.
+11. **Mobile UX pass**. App is shipped but never tested on a real iOS
    device. Bottom sheets / virtual-keyboard handling / tap targets
    should be sanity-checked on iPhone. (Android/Pixel pass done July 8,
    2026 via emulated viewport: header + filter chips fixed.)
-10. ~~**`pins.google_place_id` has NO unique constraint**~~ — FIXED
+12. ~~**`pins.google_place_id` has NO unique constraint**~~ — FIXED
    (July 8, 2026, migration 0018). Partial unique index
    (`where google_place_id is not null and archived_at is null`)
    applied to cloud after verifying 0 active dups. The POST /api/pins
@@ -543,6 +554,112 @@ In `supabase/migrations/`:
   `pins_creator_vouch` trigger needed no DDL. Consistency /
   defence-in-depth, not a live hole (the body schema-qualifies
   `public.vouches`). Applied Aug 22, 2026.
+
+---
+
+- `0033` — moves four route-only invariants into the DB, plus the board-post
+  expiry boundary (external repo sweep, Aug 22, 2026). Members hold an anon key
+  + their own JWT, so anything enforced only in a Next.js route is skippable via
+  PostgREST. Closed: (1) partial unique index on `lower(display_name)` where
+  `onboarded_at is not null and archived_at is null` — the placeholders
+  'New member' / 'Deleted user' stay exempt by construction; (2)
+  `profiles_avatar_path_own` CHECK (own `avatars/<id>/…`, or the two
+  placeholders) so a member can't claim another's photo; (3) `vouches_delete`
+  rewritten to exclude a pin creator's own vouch — done in the POLICY, not a
+  trigger, because RLS is skipped by RI cascades so `pins_delete_admin` still
+  cascades cleanly; (4) `tg_pin_photo_limit` BEFORE INSERT trigger enforcing
+  ≤4 photos/pin (the route's count was check-then-act AND skippable); (5)
+  `board_posts_select` member arm gained `expires_at > now()` — expired posts
+  were hidden by the page query only, contradicting the privacy copy; creator
+  and admin keep full visibility. Applied Aug 22, 2026 and verified with
+  minted-JWT probes against prod (dup name → 23505, foreign avatar → 23514,
+  creator vouch DELETE → 0 rows, 5th photo → 23514, expired post hidden from
+  another member but visible to author + admin). **Deliberately NOT closed**:
+  the board/resource daily+active posting caps in `src/lib/limits.ts` stay
+  advisory, consistent with 0017's accepted trust-level trade-off.
+
+---
+
+## External repository sweep (Aug 22, 2026)
+
+A full-repo review by an outside model (report at `sweep-report.md`, untracked).
+20 findings; ~15 were real, and the code+DB fixes are on `main`. What it got
+right, what it overstated, and what was deliberately declined:
+
+**Fixed (code)**
+- **Invite redeemable via the admin path** — `/admin-login`, `/api/auth/google/
+  start`, and both non-LINE callbacks accepted and consumed an `?invite=` token,
+  so an invite holder could join through Google/email and skip the LINE identity
+  mapping the bot keys off. Invite handling removed from all four; only
+  `app/api/auth/line/callback` consumes invites now. A non-admin who finds
+  `/admin-login` can still authenticate, but lands on `/no-invite`.
+- **Digest could double-post** — the cron pushed to LINE and *then* inserted
+  `digest_runs`, ignoring the insert error, so the unique key could never
+  prevent a duplicate. Now it CLAIMS the row first (23505 → skip) and releases
+  the claim if the push throws. Group-registry read errors now 500 instead of
+  reading as "no groups".
+- **Silent partial data** — `buildWeeklyDigest` and `buildCorpus` discarded
+  `{ error }` on every source query, so an outage looked like a quiet week /
+  an empty corpus Parea would answer from confidently. Both now throw.
+- **Realtime UPDATE/DELETE never reached the map** — `useRealtimePins` wrote all
+  events to a `['pins']` React Query cache MapView never read, and only INSERT
+  hit the callback, so other members' edits and archives stayed on screen until
+  reload. The hook now emits a typed `PinChange`; MapView handles all three. The
+  inline callback also re-subscribed the channel on every render — it's in a ref
+  now.
+- **Concierge undercounted spend** — refusals returned before the cost write, so
+  a billed call logged $0. Cost accounting extracted to `finalize()` and run for
+  refusals too.
+- **`/pins/[id]` was a second, thinner detail page** — no photos, no
+  translations, no avatars, and it dropped `categorySlug`, which silently
+  suppressed the sensitive-category notice on shared links and after pin
+  creation. Now redirects to `/?pin=<id>` (the canonical sheet).
+- **avatarPath was attacker-controlled** — the client posts it back after
+  upload; `isOwnAvatarPath()` (line-avatar.ts, unit-tested) now gates it in both
+  `/api/profile` and `/api/onboarding` so 0033's CHECK surfaces as a 400.
+- **Admin auth was inconsistent** — `/api/admin/moderation` gated on
+  `getCurrentClaims()` (an UNVERIFIED token decode) before a service-role write.
+  Not exploitable today (middleware calls `getUser()` first), but one matcher
+  change from being so. New `requireAdmin()` in session.ts verifies the user and
+  reads `role` from the DB; all five admin routes use it, and it hands back the
+  session client so RLS-writing routes don't pay a second `getUser()`.
+- **Dependencies** — next + eslint-config-next 15.5.18 → **15.5.21** (clears 8
+  advisories incl. Server Action SSRF/DoS), postcss 8.4.49 → **8.5.23**,
+  @playwright/test 1.49.0 → **1.55.1**, vitest 2.1.8 → **2.1.9** (critical).
+- **Drift** — HSTS header added (no `preload`; the apex isn't ours); CI got
+  `permissions: contents: read`; the stale Playwright smoke asserted Google on
+  `/sign-in` and now asserts its ABSENCE; pin metadata bounded in Zod;
+  `.env.example` gained the LINE Messaging / Anthropic / budget vars;
+  `SUPABASE_JWT_SECRET` is no longer required to boot (nothing reads it);
+  `supabase/config.toml` enables the access-token hook and points at the real
+  `/api/auth/*` callbacks; README's "single-use invites" / "`role` claim" /
+  "photo uploader missing" lines corrected; the unused, wrong `JwtClaims` type
+  deleted; the LINE "generates PKCE" comment corrected (confidential client).
+
+**Declined — do not re-propose without new information**
+- **"Choose one write boundary" (revoke all direct member DML)** — a repo-wide
+  redesign. The four invariants where a direct write breaks something the app
+  believes are closed in 0033; the rest is the same accepted trust-level
+  trade-off 0017 documents. 150 vetted members, not a public app.
+- **Atomic SQL budget-reservation RPC for Parea** — the report missed that
+  `ask.ts` already reserves a zero-cost log row BEFORE the model call, so the
+  daily-cap race is a millisecond window, not the model latency. With a $5/mo
+  cap and 20 queries/user/day, a lock-per-month-row RPC + reserved/completed/
+  failed states + reconciliation is not worth the complexity.
+- **next-intl 3.26 → 4.9.2** — a major migration. Both advisories are
+  unreachable here: no routing middleware (locale is a cookie) and no
+  `experimental.messagePrecompile`. Revisit if either is ever adopted.
+- **CSP** — needs explicit allowances for Maps, Supabase storage/auth and LINE;
+  worth a dedicated session with report-only first, not a drive-by.
+- **postcss inside Next** — `next` bundles its own postcss 8.4.31. A pnpm
+  override could break Next's internals, and the advisories all need
+  attacker-controlled CSS at build time, which doesn't exist here. The postcss
+  the project actually builds with (via `@tailwindcss/postcss`) is 8.5.23.
+
+**Still open from the sweep** (see the TODO list below): no DB/RLS integration
+suite, Playwright still not in CI, and `package.json` pins `supabase` at 1.219.2
+which cannot parse `major_version = 17` — the global Homebrew CLI (2.98.2) is
+what actually runs `db push`.
 
 ---
 

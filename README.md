@@ -9,8 +9,10 @@ runs its own fully independent instance.
 
 ## What's in v1
 
-- LINE Login (primary) and Google Sign-In (fallback) via Supabase Auth
-- Invite-only membership (single-use UUID tokens)
+- LINE Login — the only public sign-in method. Google Sign-In and magic link
+  still work, but only from the unlinked `/admin-login` page, and neither can
+  redeem an invite: membership is LINE-only
+- Invite-only membership (UUID tokens, single- or multi-use, revocable)
 - Manual pin add via Google Places Autocomplete (Japan-restricted)
 - Vouches with optional comments — creator auto-counts as first voucher
 - Pin photos (1–4 per pin, private bucket, signed URLs, client-compressed)
@@ -21,16 +23,16 @@ runs its own fully independent instance.
 - EL/EN UI via `next-intl` (forkable default locale via `i18n.config.ts`)
 - Account deletion with right-to-erasure scrub
 - Trigram-based fuzzy search across pins, members
-- Postgres RLS using JWT custom claims (`is_member`, `role`, `onboarded`)
-  injected by a Custom Access Token Hook — zero-row-lookup at policy time
+- Postgres RLS using JWT custom claims (`is_member`, `user_role`, `onboarded`)
+  injected by a Custom Access Token Hook — zero-row-lookup at policy time.
+  (`user_role`, not `role`: Google/Supabase reserve the top-level `role` claim.)
 
 ## Out of v1 (deferred)
 
 AI screenshot extraction, itineraries, leaderboard, audit-log UI, categories
-CRUD UI. Also deferred: a client-side photo uploader for pins (the signed-URL
-API route exists; only the UI is missing), and admin bootstrap via UI instead
-of a manual SQL update (useful for co-admins or forks). See `CLAUDE.md` for
-the full running list of open issues.
+CRUD UI. Also deferred: admin bootstrap via UI instead of a manual SQL update
+(useful for co-admins or forks). See `CLAUDE.md` for the full running list of
+open issues.
 
 ## Stack
 
@@ -77,7 +79,8 @@ psql -h localhost -p 54322 -U postgres -f supabase/seed.sql
 
 # Edit supabase/seed.sql — bootstrap admin block at the bottom — with your
 # auth.users.id after your first sign-in, OR use the dashboard to set
-# is_member=true, role='admin' on your profiles row.
+# is_member=true, role='admin' on your profiles row (the profiles COLUMN is
+# `role`; the JWT CLAIM it becomes is `user_role`).
 
 pnpm dev
 ```

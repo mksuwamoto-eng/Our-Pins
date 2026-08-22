@@ -147,8 +147,20 @@ export function MapView({ initialPins, categories, members }: Props) {
     return m;
   }, [pins]);
 
-  useRealtimePins((newPin) => {
-    setPins((prev) => [newPin, ...prev.filter((p) => p.id !== newPin.id)]);
+  // Live pin feed. All three event kinds land here: without update/delete the
+  // map kept showing other members' edited or archived pins until a reload.
+  useRealtimePins((change) => {
+    setPins((prev) => {
+      if (change.type === 'delete') return prev.filter((p) => p.id !== change.id);
+      const pin = change.pin;
+      if (pin.archived_at) return prev.filter((p) => p.id !== pin.id);
+      const i = prev.findIndex((p) => p.id === pin.id);
+      if (i === -1) return [pin, ...prev];
+      // Replace in place — reordering on every edit would shuffle the markers.
+      const next = [...prev];
+      next[i] = pin;
+      return next;
+    });
   });
 
   // Initialise the Google Map.

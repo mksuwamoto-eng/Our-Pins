@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/session';
 
 const patchSchema = z.object({
   group_id: z.string().min(1),
@@ -9,15 +10,9 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: Request) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new NextResponse('unauth', { status: 401 });
   // /api/admin/* is not middleware-gated (its check is startsWith('/admin')),
   // and line_groups has no member write policy — check admin explicitly.
-  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (me?.role !== 'admin') return new NextResponse('forbidden', { status: 403 });
+  if (!(await requireAdmin())) return new NextResponse('forbidden', { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = patchSchema.safeParse(body);

@@ -7,6 +7,24 @@ const MAX_BYTES = 5 * 1024 * 1024;
 // placeholder rather than null (see the sign-in bootstrap in session.ts).
 export const PENDING_AVATAR = 'avatars/_pending.png';
 
+/** The one storage path a member's avatar may occupy. */
+export function ownAvatarPath(userId: string): string {
+  return `avatars/${userId}/profile.jpg`;
+}
+
+/**
+ * True if `path` is an avatar this user is allowed to claim.
+ *
+ * The client posts avatarPath back to /api/profile and /api/onboarding after
+ * uploading, so it is attacker-controlled: without this, a member could point
+ * their row at another member's photo. Migration 0033 enforces the same shape
+ * as a CHECK constraint; this exists so the answer is a clean 400 rather than
+ * a constraint violation surfacing as a 500.
+ */
+export function isOwnAvatarPath(path: string, userId: string): boolean {
+  return path === PENDING_AVATAR || path === ownAvatarPath(userId);
+}
+
 /**
  * Only ever fetch a LINE CDN URL over https. Callers must source the URL from
  * the user's own auth metadata (written at sign-in), never from request input —

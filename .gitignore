@@ -37,3 +37,6 @@ supabase/.env
 # Misc
 *.log
 story-timelapse/
+
+# External review reports kept locally, not published (repo is public).
+sweep-report.md

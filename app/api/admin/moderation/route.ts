@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
-import { getCurrentClaims } from '@/lib/auth/session';
+import { requireAdmin } from '@/lib/auth/session';
 
 const TABLES = new Set(['pins', 'board_posts', 'resources']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -9,12 +9,14 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * Admin archive/restore across content types. Uses the service-role client so
  * it works uniformly regardless of each table's per-row RLS (some tables only
  * expose archived rows to their creator, which would block a browser-client
- * restore). Admin-gated here; /api/admin/* is NOT covered by the middleware
- * /admin gate, so the check must live in-route.
+ * restore). Admin-gated via requireAdmin(); /api/admin/* is NOT covered by the
+ * middleware /admin gate, so the check must live in-route.
  */
 export async function POST(req: Request) {
-  const claims = await getCurrentClaims();
-  if (claims?.user_role !== 'admin') {
+  // requireAdmin(), not getCurrentClaims(): this route writes with the
+  // service-role client, so its gate has to verify the user rather than trust
+  // a decoded access token.
+  if (!(await requireAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

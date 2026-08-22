@@ -60,8 +60,13 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
   const windowStartISO = new Date(now.getTime() - WINDOW_DAYS * 86_400_000).toISOString();
   const nowISO = now.toISOString();
 
-  const [{ data: pins }, { data: posts }, { data: resources }, { data: members }, { data: categories }] =
-    await Promise.all([
+  const [
+    { data: pins, error: pinsError },
+    { data: posts, error: postsError },
+    { data: resources, error: resourcesError },
+    { data: members, error: membersError },
+    { data: categories, error: categoriesError },
+  ] = await Promise.all([
       admin
         .from('pins')
         .select('id, name, category_id, created_at')
@@ -90,6 +95,15 @@ export async function buildWeeklyDigest(now: Date = new Date()): Promise<DigestR
         .order('onboarded_at', { ascending: false }),
       admin.from('categories').select('id, slug'),
     ]);
+
+  // Fail loudly rather than posting a digest that silently dropped a section:
+  // a failed query is indistinguishable from "nothing new this week", and the
+  // content gate would happily call the result quiet.
+  const sourceError =
+    pinsError ?? postsError ?? resourcesError ?? membersError ?? categoriesError;
+  if (sourceError) {
+    throw new Error(`digest source query failed: ${sourceError.message}`);
+  }
 
   const slugOf = new Map((categories ?? []).map((c) => [c.id, c.slug]));
   const newPins = pins ?? [];

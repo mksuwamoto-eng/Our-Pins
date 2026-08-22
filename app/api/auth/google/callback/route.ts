@@ -1,14 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
-import { consumeInviteByToken, consumeInviteCookie } from '@/lib/auth/accept-invite';
 import { safeNext } from '@/lib/auth/safe-next';
 import { publicEnv } from '@/lib/env';
 
+// Reached only from the unlinked /admin-login page. Membership is LINE-only
+// (see app/sign-in/page.tsx), so this path deliberately does NOT consume
+// invites: an unlinked URL is not an authorization boundary, and honouring
+// ?invite= here let anyone holding a legitimate invite become a member through
+// Google instead of LINE, skipping the line_sub mapping the bot relies on.
+// A non-admin who signs in here gets an is_member=false account and lands on
+// /no-invite.
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
   const next = safeNext(url.searchParams.get('next'));
-  const inviteToken = url.searchParams.get('invite');
 
   if (!code) {
     return NextResponse.redirect(`${publicEnv.NEXT_PUBLIC_SITE_URL}/sign-in?error=Missing+code`);
@@ -35,10 +40,7 @@ export async function GET(req: NextRequest) {
       },
       { onConflict: 'id', ignoreDuplicates: true },
     );
-    const consumed = inviteToken ? await consumeInviteByToken(user.id, inviteToken) : null;
-    if (!consumed) await consumeInviteCookie(user.id);
-    // The invite consumption flipped is_member; refresh the session so the
-    // new JWT claims (is_member=true) take effect immediately.
+    // Refresh so the JWT carries the profile's current claims.
     await supabase.auth.refreshSession();
   }
 

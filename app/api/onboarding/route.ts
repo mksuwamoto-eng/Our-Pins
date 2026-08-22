@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
 import { onboardingSchema, resolveNames } from '@/lib/schemas/profile';
+import { isOwnAvatarPath } from '@/lib/auth/line-avatar';
 
 export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
@@ -45,7 +46,12 @@ export async function POST(req: Request) {
     bio: v.bio?.trim() || null,
     onboarded_at: new Date().toISOString(),
   };
-  if (v.avatarPath) update.avatar_path = v.avatarPath;
+  if (v.avatarPath) {
+    if (!isOwnAvatarPath(v.avatarPath, user.id)) {
+      return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
+    }
+    update.avatar_path = v.avatarPath;
+  }
 
   // Onboarding has to bypass column-level grants on profiles. Migration 0012
   // revokes UPDATE on onboarded_at (and other privileged cols) from the

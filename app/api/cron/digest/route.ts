@@ -41,44 +41,64 @@ export async function GET(req: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const { data: groups } = await admin
+  const { data: groups, error: groupsError } = await admin
     .from('line_groups')
     .select('group_id')
     .eq('digest_enabled', true)
     .is('left_at', null);
+  // Fail loudly: an unreadable registry must not read as "no groups enabled"
+  // and silently swallow the week's digest.
+  if (groupsError) {
+    console.error('[cron/digest] group registry unreadable:', groupsError);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
   const targets = (groups ?? []).map((g) => g.group_id);
   if (!targets.length) {
     return NextResponse.json({ sent: false, reason: 'no_groups', counts: digest.counts });
   }
 
-  // Idempotency: skip groups already posted to this week (retry-safe).
-  const { data: done } = await admin
-    .from('digest_runs')
-    .select('group_id')
-    .eq('week_start', digest.weekStart)
-    .in('group_id', targets);
-  const alreadyDone = new Set((done ?? []).map((d) => d.group_id));
   const itemCount =
     digest.counts.pins + digest.counts.posts + digest.counts.resources + digest.counts.members;
 
-  // Groups are independent — one failing push must not block the others.
+  // Idempotency: CLAIM the (week_start, group_id) row BEFORE pushing, and let
+  // the unique index decide the winner. Reading digest_runs first and inserting
+  // afterwards could not prevent duplicates — two overlapping runs both read an
+  // empty set, and a push whose audit insert failed looked like it never
+  // happened, so the next retry sent the digest a second time.
+  // Groups are independent: one failing push must not block the others.
   const results = await Promise.allSettled(
-    targets
-      .filter((id) => !alreadyDone.has(id))
-      .map(async (group_id) => {
+    targets.map(async (group_id) => {
+      const { error: claimError } = await admin
+        .from('digest_runs')
+        .insert({ week_start: digest.weekStart, group_id, item_count: itemCount });
+      // 23505 = already claimed this week (a retry, or a concurrent run).
+      if (claimError) {
+        if (claimError.code === '23505') return 'skipped' as const;
+        throw claimError;
+      }
+      try {
         await pushLineMessage({
           to: group_id,
           text: digest.text,
           accessToken: env.LINE_MESSAGING_ACCESS_TOKEN!,
         });
+      } catch (err) {
+        // Release the claim so a retry can send. Worst case the delete itself
+        // fails and this group is skipped for the week — silence beats a
+        // double post.
         await admin
           .from('digest_runs')
-          .insert({ week_start: digest.weekStart, group_id, item_count: itemCount });
-        return group_id;
-      }),
+          .delete()
+          .eq('week_start', digest.weekStart)
+          .eq('group_id', group_id);
+        throw err;
+      }
+      return 'posted' as const;
+    }),
   );
 
-  const posted = results.filter((r) => r.status === 'fulfilled').length;
+  const posted = results.filter((r) => r.status === 'fulfilled' && r.value === 'posted').length;
+  const skipped = results.filter((r) => r.status === 'fulfilled' && r.value === 'skipped').length;
   const failed = results.filter((r) => r.status === 'rejected') as PromiseRejectedResult[];
   for (const f of failed) console.error('[cron/digest] push failed:', f.reason);
 
@@ -88,7 +108,7 @@ export async function GET(req: Request) {
     counts: digest.counts,
     targets: targets.length,
     posted,
-    skipped: targets.length - (posted + failed.length),
+    skipped,
     failed: failed.length,
   });
 }

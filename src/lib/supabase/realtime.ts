@@ -2,16 +2,34 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { getSupabaseBrowserClient } from './browser';
 import type { Pin, Vouch } from './types';
 
 /**
- * Subscribe to live pin INSERT / UPDATE / DELETE events on the map.
- * Mutates the ['pins'] React Query cache directly — no invalidateQueries.
+ * One live pin event. Consumers that keep their own list (MapView) need all
+ * three kinds: only forwarding INSERT left other members' edits, archives and
+ * deletes invisible until a reload.
  */
-export function useRealtimePins(onNewPin?: (pin: Pin) => void) {
+export type PinChange =
+  | { type: 'insert'; pin: Pin }
+  | { type: 'update'; pin: Pin }
+  | { type: 'delete'; id: string };
+
+/**
+ * Subscribe to live pin INSERT / UPDATE / DELETE events on the map.
+ * Mutates the ['pins'] React Query cache directly — no invalidateQueries —
+ * and forwards every event to `onChange`.
+ */
+export function useRealtimePins(onChange?: (change: PinChange) => void) {
   const queryClient = useQueryClient();
+  // Callers pass an inline arrow, so a fresh identity every render. Keeping it
+  // in a ref stops the effect from tearing down and re-subscribing the channel
+  // on every single render.
+  const handlerRef = useRef(onChange);
+  useEffect(() => {
+    handlerRef.current = onChange;
+  });
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -23,7 +41,7 @@ export function useRealtimePins(onNewPin?: (pin: Pin) => void) {
         queryClient.setQueryData<Pin[]>(['pins'], (old) =>
           old ? [...old.filter((p) => p.id !== pin.id), pin] : [pin],
         );
-        onNewPin?.(pin);
+        handlerRef.current?.({ type: 'insert', pin });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pins' }, (payload: RealtimePostgresChangesPayload<Pin>) => {
         const updated = payload.new as Pin;
@@ -34,17 +52,19 @@ export function useRealtimePins(onNewPin?: (pin: Pin) => void) {
               : old.map((p) => (p.id === updated.id ? updated : p))
             : old,
         );
+        handlerRef.current?.({ type: 'update', pin: updated });
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pins' }, (payload: RealtimePostgresChangesPayload<Pin>) => {
         const id = (payload.old as { id: string }).id;
         queryClient.setQueryData<Pin[]>(['pins'], (old) => old?.filter((p) => p.id !== id) ?? []);
+        handlerRef.current?.({ type: 'delete', id });
       })
       .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient, onNewPin]);
+  }, [queryClient]);
 }
 
 /**
