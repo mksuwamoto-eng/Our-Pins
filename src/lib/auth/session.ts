@@ -47,31 +47,27 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
     if (existing.email !== email) {
       await admin.from('private_profiles').update({ email }).eq('id', existing.id);
     }
-    // Refresh the LINE profile photo URL on every sign-in. It used to be
-    // written only when the auth user was first created, so members who joined
-    // before the photo was captured had no picture in their metadata and the
-    // LINE-avatar import could never fire for them. LINE also rotates these
-    // CDN URLs when a member changes their photo.
-    if (line.picture && authUser.user.user_metadata?.picture !== line.picture) {
-      await admin.auth.admin.updateUserById(existing.id, {
-        user_metadata: { ...authUser.user.user_metadata, picture: line.picture },
-      });
-    }
+    await syncLineMetadata(admin, existing.id, authUser.user.user_metadata, line);
     return { userId: existing.id, email, isNewUser: false };
   }
 
   const email = line.email ?? syntheticEmail(line.sub);
 
-  // Resolve an existing auth user for this email — a member who onboarded via
-  // Google/magic link (when LINE shares the email), or an orphan from an
-  // earlier half-completed LINE sign-in. generateLink is the documented way
-  // to look up an auth user by email; it errors for unknown emails, in which
-  // case we create the user.
+  // Resolve the auth user for this email — a member who onboarded via
+  // Google/magic link (when LINE shares the email), an orphan from an earlier
+  // half-completed LINE sign-in, or nobody yet.
+  //
+  // generate_link does NOT error on an unknown email: it CREATES the user and
+  // returns it. So this is the branch a brand-new member takes, and createUser
+  // below only runs if generate_link itself fails. That is why the metadata
+  // has to be written here — the createUser branch used to be the only writer,
+  // which left every LINE member with empty user_metadata.
   let userId: string;
   let isNewUser = false;
   const { data: linked } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
   if (linked?.user) {
     userId = linked.user.id;
+    await syncLineMetadata(admin, userId, linked.user.user_metadata, line);
   } else {
     const { data: created, error } = await admin.auth.admin.createUser({
       email,
@@ -111,6 +107,41 @@ export async function upsertUserFromLine(line: LineProfile): Promise<UpsertResul
   }
 
   return { userId, email, isNewUser };
+}
+
+/**
+ * Keep the auth user's metadata in step with the LINE profile.
+ *
+ * Two features read it back: the automatic photo import (`ensureLineAvatar`,
+ * which takes `picture`) and the onboarding name pre-fill (which takes
+ * `name`). Both were dead for new members — the only writer was the
+ * unreachable createUser branch — so every LINE member landed on onboarding
+ * with no photo and empty name fields.
+ *
+ * Runs on every sign-in, not just the first: LINE rotates its CDN photo URLs
+ * when a member changes their picture, and members rename themselves.
+ *
+ * Never throws. Metadata is a convenience, so a failure here must not cost the
+ * member their sign-in.
+ */
+async function syncLineMetadata(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  userId: string,
+  current: Record<string, unknown> | undefined,
+  line: LineProfile,
+): Promise<void> {
+  const before = current ?? {};
+  const next: Record<string, unknown> = { ...before, line_sub: line.sub };
+  // Only overwrite with something: a LINE profile missing a field must not
+  // erase a value captured on an earlier sign-in.
+  if (line.name) next.name = line.name;
+  if (line.picture) next.picture = line.picture;
+
+  const unchanged = (['line_sub', 'name', 'picture'] as const).every((k) => before[k] === next[k]);
+  if (unchanged) return;
+
+  const { error } = await admin.auth.admin.updateUserById(userId, { user_metadata: next });
+  if (error) console.error('[line] user_metadata sync failed', error);
 }
 
 function syntheticEmail(lineSub: string): string {
