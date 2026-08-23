@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Category, Pin } from '@/lib/supabase/types';
 import { categoryLabel } from '@/lib/i18n/category';
+import { TagPicker } from './TagPicker';
 import { SENSITIVE_CATEGORY_SLUGS } from '@/lib/categories/sensitive';
 
 interface FetchedPlace {
@@ -25,6 +26,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
   const tCommon = useTranslations('common');
   const tc = useTranslations('categories');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
+  const [tags, setTags] = useState<string[]>([]);
   const [vouchNote, setVouchNote] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
           city,
           address_components: components,
           category_id: categoryId,
+          tags,
           vouch_note: vouchNote.trim(),
         }),
       });
@@ -92,6 +95,7 @@ export function InlineAddPinForm({ place, categories, onSaved }: Props) {
           ))}
         </select>
       </div>
+      <TagPicker value={tags} onChange={setTags} disabled={pending} />
       <div>
         <label className="mb-1 block text-sm font-medium">{t('vouchNote')}</label>
         <textarea

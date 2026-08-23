@@ -12,6 +12,7 @@ import { useRealtimeVouches } from '@/lib/supabase/realtime';
 import type { Category, Pin, Vouch, Profile } from '@/lib/supabase/types';
 import { relativeTime } from '@/lib/time';
 import { categoryLabel } from '@/lib/i18n/category';
+import { isTagSlug } from '@/lib/tags';
 import { LocalizedText } from '@/components/i18n/LocalizedText';
 import { VouchPanel } from '@/components/pins/VouchPanel';
 import { PinPhotos } from '@/components/pins/PinPhotos';
@@ -207,6 +208,7 @@ function ExistingPinView({
 }) {
   const t = useTranslations('pin');
   const tc = useTranslations('categories');
+  const tt = useTranslations('tags');
   const locale = useLocale();
   const category = categories.find((c) => c.id === pin.category_id) ?? null;
   const queryClient = useQueryClient();
@@ -329,6 +331,16 @@ function ExistingPinView({
             {categoryLabel(tc, category)}
           </span>
         ) : null}
+        {/* The second axis. Outlined rather than filled so it reads as a
+            qualifier on the category badge, not a competing one. */}
+        {(pin.tags ?? []).filter(isTagSlug).map((tag) => (
+          <span
+            key={tag}
+            className="inline-block rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--fg)]"
+          >
+            {tt(tag)}
+          </span>
+        ))}
         <span className="text-sm text-[var(--muted)]">{pin.address}</span>
       </div>
 

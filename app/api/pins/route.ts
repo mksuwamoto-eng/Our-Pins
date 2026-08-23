@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       city: parsed.data.city ?? null,
       address_components: parsed.data.address_components ?? null,
       category_id: parsed.data.category_id,
+      tags: parsed.data.tags ?? [],
       vouch_note: parsed.data.vouch_note,
     })
     .select()

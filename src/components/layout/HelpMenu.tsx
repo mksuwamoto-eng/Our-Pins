@@ -10,7 +10,7 @@ import { FeedbackSheet } from '@/components/feedback/FeedbackSheet';
  * One header icon that used to be three (guide, guidelines, feedback). Opens a
  * small dropdown with links to /guide and /guidelines plus a "Send feedback"
  * action that opens the shared feedback sheet. Outside-click-to-close pattern
- * mirrors src/components/map/CategoryFilter.tsx.
+ * mirrors src/components/map/FacetFilter.tsx.
  */
 export function HelpMenu() {
   const t = useTranslations('header');

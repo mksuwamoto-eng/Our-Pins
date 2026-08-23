@@ -10,6 +10,8 @@ interface ViewportState {
 
 interface FiltersState {
   categoryIds: string[];
+  /** Pin tag slugs (src/lib/tags). A second axis: OR within, AND with the rest. */
+  tags: string[];
   prefectures: string[];
   authorIds: string[];
   sort: SortMode;
@@ -17,6 +19,7 @@ interface FiltersState {
   showArchived: boolean;
   viewport: ViewportState;
   setCategoryIds: (ids: string[]) => void;
+  setTags: (tags: string[]) => void;
   setPrefectures: (ps: string[]) => void;
   setAuthorIds: (ids: string[]) => void;
   setSort: (s: SortMode) => void;
@@ -35,6 +38,7 @@ export const useFiltersStore = create<FiltersState>()(
   persist(
     (set) => ({
       categoryIds: [],
+      tags: [],
       prefectures: [],
       authorIds: [],
       sort: 'recent',
@@ -42,6 +46,7 @@ export const useFiltersStore = create<FiltersState>()(
       showArchived: false,
       viewport: DEFAULT_VIEWPORT,
       setCategoryIds: (ids) => set({ categoryIds: ids }),
+      setTags: (tags) => set({ tags }),
       setPrefectures: (ps) => set({ prefectures: ps }),
       setAuthorIds: (ids) => set({ authorIds: ids }),
       setSort: (s) => set({ sort: s }),
@@ -51,6 +56,7 @@ export const useFiltersStore = create<FiltersState>()(
       clear: () =>
         set({
           categoryIds: [],
+          tags: [],
           prefectures: [],
           authorIds: [],
           sort: 'recent',
@@ -62,6 +68,7 @@ export const useFiltersStore = create<FiltersState>()(
       name: 'our-pins:filters',
       partialize: (s) => ({
         categoryIds: s.categoryIds,
+        tags: s.tags,
         prefectures: s.prefectures,
         authorIds: s.authorIds,
         sort: s.sort,

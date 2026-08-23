@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
+import { isTagSlug, TAG_CORPUS_LABELS } from '@/lib/tags';
 
 /**
  * Build the Concierge's entire knowledge base as one text block: every live
@@ -26,7 +27,7 @@ export async function buildCorpus(): Promise<string> {
   const results = await Promise.all([
       admin
         .from('pins')
-        .select('id, name, address, prefecture, city, category_id, vouch_note, created_by, created_at')
+        .select('id, name, address, prefecture, city, category_id, tags, vouch_note, created_by, created_at')
         .is('archived_at', null)
         .order('created_at', { ascending: true }),
       admin.from('vouches').select('pin_id, voucher_id, comment'),
@@ -85,6 +86,12 @@ export async function buildCorpus(): Promise<string> {
       `Location: ${[pin.city, pin.prefecture].filter(Boolean).join(', ')} — ${pin.address}`,
       `Pinned by ${creator}: "${pin.vouch_note}"`,
     ];
+    // The second axis (src/lib/tags). At most 3 short slugs per pin, so this
+    // stays bounded — no prompt-size drift. Omitted entirely when empty.
+    const tagLabels = ((pin.tags ?? []) as string[])
+      .filter(isTagSlug)
+      .map((tag) => TAG_CORPUS_LABELS[tag]);
+    if (tagLabels.length) lines.splice(3, 0, `Tags: ${tagLabels.join('; ')}`);
     for (const v of vouchesByPin.get(pin.id) ?? []) {
       if (v.voucher_id === pin.created_by) continue; // creator auto-vouch duplicates the note
       const who = nameOf.get(v.voucher_id) ?? 'A former member';

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TAG_SLUGS, MAX_TAGS_PER_PIN } from '@/lib/tags';
 
 // Every field below is echoed from a Google Places response the browser hands
 // us, so the client is not a trustworthy bound. The caps are generous multiples
@@ -26,6 +27,14 @@ export const pinCreateSchema = z.object({
   city: z.string().trim().max(100).nullable().optional(),
   address_components: addressComponentsSchema.nullable().optional(),
   category_id: z.string().uuid(),
+  // A closed vocabulary (see src/lib/tags) mirrored by the pins_tags_vocab
+  // CHECK in migration 0034. Zod rejects an unknown slug with a 400 here so it
+  // never reaches Postgres as an opaque 23514.
+  tags: z
+    .array(z.enum(TAG_SLUGS))
+    .max(MAX_TAGS_PER_PIN)
+    .transform((v) => [...new Set(v)])
+    .optional(),
   vouch_note: z.string().trim().min(1).max(1000),
 });
 

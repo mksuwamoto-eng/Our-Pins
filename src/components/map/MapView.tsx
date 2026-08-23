@@ -43,11 +43,12 @@ export function MapView({ initialPins, categories, members }: Props) {
   const t = useTranslations('map');
   const tCommon = useTranslations('common');
   const tCat = useTranslations('categories');
+  const tTag = useTranslations('tags');
   const containerRef = useRef<HTMLDivElement>(null);
   const clustererRef = useRef<MarkerClusterer | null>(null);
   const router = useRouter();
 
-  const { categoryIds, prefectures, authorIds, setAuthorIds, search, setViewport } =
+  const { categoryIds, tags, prefectures, authorIds, setAuthorIds, search, setViewport } =
     useFiltersStore();
   const [pins, setPins] = useState<Pin[]>(initialPins);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -136,6 +137,14 @@ export function MapView({ initialPins, categories, members }: Props) {
   const categoryCounts = useMemo(() => {
     const m: Record<string, number> = {};
     for (const p of pins) m[p.category_id] = (m[p.category_id] ?? 0) + 1;
+    return m;
+  }, [pins]);
+
+  // Same idea for the tag axis. Unlike categories a pin can hold several tags,
+  // so these count memberships and deliberately don't sum to pins.length.
+  const tagCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const p of pins) for (const tag of p.tags ?? []) m[tag] = (m[tag] ?? 0) + 1;
     return m;
   }, [pins]);
 
@@ -238,6 +247,7 @@ export function MapView({ initialPins, categories, members }: Props) {
 
     const filtered = pins.filter((p) => {
       if (categoryIds.length && !categoryIds.includes(p.category_id)) return false;
+      if (tags.length && !(p.tags ?? []).some((tag) => tags.includes(tag))) return false;
       if (prefectures.length && !prefectures.includes(p.prefecture)) return false;
       if (authorIds.length && !authorIds.includes(p.created_by)) return false;
       if (search.trim()) {
@@ -250,7 +260,10 @@ export function MapView({ initialPins, categories, members }: Props) {
         // transliterated name column or a romaji search index.
         const cat = categoryById.get(p.category_id);
         const catLabel = cat ? categoryLabel(tCat, cat) : '';
-        const haystack = `${p.name}\n${p.vouch_note}\n${p.address}\n${catLabel}\n${p.translations?.el ?? ''}\n${p.translations?.en ?? ''}`.toLowerCase();
+        // Tag labels are in the haystack on purpose: typing "greek" finds the
+        // tagged pins for members who never open the tag dropdown.
+        const tagLabels = (p.tags ?? []).map((tag) => tTag(tag)).join('\n');
+        const haystack = `${p.name}\n${p.vouch_note}\n${p.address}\n${catLabel}\n${tagLabels}\n${p.translations?.el ?? ''}\n${p.translations?.en ?? ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -271,7 +284,7 @@ export function MapView({ initialPins, categories, members }: Props) {
     return () => {
       clustererRef.current?.clearMarkers();
     };
-  }, [map, pins, categoryIds, prefectures, authorIds, search, categoryById, tCat]);
+  }, [map, pins, categoryIds, tags, prefectures, authorIds, search, categoryById, tCat, tTag]);
 
   function handlePinSaved(p: Pin) {
     setPins((prev) => [p, ...prev.filter((x) => x.id !== p.id)]);
@@ -300,7 +313,12 @@ export function MapView({ initialPins, categories, members }: Props) {
           {mapLoadFailed ? t('loadError') : tCommon('loading')}
         </div>
       ) : null}
-      <FilterBar categories={categories} members={members} counts={categoryCounts} />
+      <FilterBar
+        categories={categories}
+        members={members}
+        counts={categoryCounts}
+        tagCounts={tagCounts}
+      />
       {showIntro && tilesLoaded ? (
         <div className="absolute inset-x-3 top-16 z-20 mx-auto max-w-md rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-lg">
           <p className="text-sm text-[var(--fg)]">{t('welcome')}</p>

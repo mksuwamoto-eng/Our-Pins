@@ -8,7 +8,7 @@ import { Menu } from 'lucide-react';
 /**
  * Mobile-only (`md:hidden`) collapse of the header nav row. On phones the
  * inline nav in AppShell is hidden and this burger takes its place; the links
- * live in a dropdown using the same outside-click pattern as CategoryFilter /
+ * live in a dropdown using the same outside-click pattern as FacetFilter /
  * HelpMenu. Data (files URL, admin role) is resolved in the server AppShell and
  * passed down as props so this stays a thin client shell.
  */

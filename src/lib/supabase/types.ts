@@ -59,6 +59,7 @@ export interface Pin {
   city: string | null;
   address_components: Json | null;
   category_id: string;
+  tags: string[];
   vouch_note: string;
   translations: Translations;
   created_at: string;

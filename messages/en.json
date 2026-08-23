@@ -152,7 +152,10 @@
     "allCategories": "All categories",
     "categoryFilter": "Filter by category",
     "nSelected": "{count} selected",
-    "clearCategories": "Clear categories"
+    "clearCategories": "Clear categories",
+    "allTags": "All tags",
+    "tagFilter": "Filter by tag",
+    "clearTags": "Clear tags"
   },
   "pin": {
     "vouchedBy": "Vouched by",
@@ -163,6 +166,8 @@
     "attributionNote": "Posted with your name — visible to all members, and Parea may cite it.",
     "sensitiveNote": "Heads-up: vouching here shares, under your name, that you've used this kind of service. Vouch only if you're comfortable with all members knowing.",
     "category": "Category",
+    "tagsLabel": "Tags (optional)",
+    "tagsHint": "What makes this relevant to the community.",
     "addPhotos": "Add photos (up to 4)",
     "addPhoto": "Add photo",
     "removePhoto": "Remove photo",
@@ -312,6 +317,11 @@
     "housing-real-estate": "Housing & real estate",
     "accountants-tax": "Accountants & tax",
     "mental-health": "Mental health & therapy"
+  },
+  "tags": {
+    "greek": "Greek",
+    "greek-speaking": "Greek spoken",
+    "english-ok": "English OK"
   },
   "activity": {
     "title": "Activity",

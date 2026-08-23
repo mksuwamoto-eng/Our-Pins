@@ -9,6 +9,7 @@ import type { Category } from '@/lib/supabase/types';
 import { placeToPinFields } from '@/lib/maps/places';
 import { categoryLabel } from '@/lib/i18n/category';
 import { SENSITIVE_CATEGORY_SLUGS } from '@/lib/categories/sensitive';
+import { TagPicker } from './TagPicker';
 
 interface FormValues {
   vouch_note: string;
@@ -23,6 +24,9 @@ export function PinForm({ categories }: { categories: Category[] }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [place, setPlace] = useState<ReturnType<typeof placeToPinFields> | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Outside react-hook-form: a multi-select of chips is simpler as plain
+  // state than as an RHF field, and it ships to the API alongside `values`.
+  const [tags, setTags] = useState<string[]>([]);
 
   const form = useForm<FormValues>({
     defaultValues: { vouch_note: '', category_id: categories[0]?.id ?? '' },
@@ -72,7 +76,7 @@ export function PinForm({ categories }: { categories: Category[] }) {
     const res = await fetch('/api/pins', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ ...place, ...values }),
+      body: JSON.stringify({ ...place, ...values, tags }),
     });
     if (!res.ok) {
       const json = (await res.json().catch(() => ({}))) as { error?: string };
@@ -114,6 +118,8 @@ export function PinForm({ categories }: { categories: Category[] }) {
           ))}
         </select>
       </div>
+
+      <TagPicker value={tags} onChange={setTags} disabled={form.formState.isSubmitting} />
 
       <div className="space-y-1">
         <label className="block text-sm font-medium">{t('vouchNote')}</label>

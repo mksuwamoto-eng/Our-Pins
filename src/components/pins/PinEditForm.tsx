@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Category, Pin } from '@/lib/supabase/types';
 import { categoryLabel } from '@/lib/i18n/category';
+import { TagPicker } from './TagPicker';
 
 interface Props {
   pin: Pin;
@@ -18,6 +19,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
   const tCommon = useTranslations('common');
   const tc = useTranslations('categories');
   const [categoryId, setCategoryId] = useState(pin.category_id);
+  const [tags, setTags] = useState<string[]>(pin.tags ?? []);
   const [vouchNote, setVouchNote] = useState(pin.vouch_note);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -31,7 +33,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
       const res = await fetch(`/api/pins/${pin.id}`, {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ category_id: categoryId, vouch_note: vouchNote.trim() }),
+        body: JSON.stringify({ category_id: categoryId, tags, vouch_note: vouchNote.trim() }),
       });
       if (!res.ok) throw new Error('save failed');
       const updated = (await res.json()) as Pin;
@@ -72,6 +74,7 @@ export function PinEditForm({ pin, categories, onSaved, onCancel, onDeleted }: P
           ))}
         </select>
       </div>
+      <TagPicker value={tags} onChange={setTags} disabled={busy} />
       <div>
         <label className="mb-1 block text-sm font-medium">{t('vouchNote')}</label>
         <textarea
