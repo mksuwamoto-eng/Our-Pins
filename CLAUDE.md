@@ -65,6 +65,15 @@ Local credentials live in `~/code/our-pins/.env.local` on Mako's Mac.
 
 ---
 
+## Explaining changes (`/show-me`)
+
+When explaining a change, a PR, or a design, run `/show-me` — diagrams,
+call trees, file trees, mermaid, diffs. Skill lives at
+`.claude/skills/show-me/SKILL.md` (HumanLayer, MIT; Cursor also
+loads `.agents/skills/show-me/`).
+
+---
+
 ## What works in production (verified end-to-end with a real test user)
 
 - ✅ **Public sign-in is LINE-only** (commit `3fe8d49`, July 9, 2026):
@@ -873,3 +882,4 @@ src/
    branch.
 4. Don't suggest setup steps that have already been done — production
    is live, OAuth is configured, RLS audit is closed, etc.
+5. When explaining a change, a PR, or a design, run `/show-me`.
